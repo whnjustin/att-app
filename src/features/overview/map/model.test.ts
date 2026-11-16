@@ -127,9 +127,9 @@ describe('swapTimes', () => {
     expect(b).toEqual({ startMin: 600, endMin: 750 });
   });
   it('clamps to the end of the day', () => {
-    const [a, b] = swapTimes({ startMin: 1200, endMin: 1380 }, { startMin: 1380, endMin: 1440 });
-    expect(a).toEqual({ startMin: 1380, endMin: 1440 });
-    expect(b).toEqual({ startMin: 1200, endMin: 1260 });
+    const [a, b] = swapTimes({ startMin: 1500, endMin: 1680 }, { startMin: 1680, endMin: 1740 });
+    expect(a).toEqual({ startMin: 1680, endMin: 1740 });
+    expect(b).toEqual({ startMin: 1500, endMin: 1560 });
   });
   it('keeps the 30 minute grid and a minimum of 30 minutes', () => {
     const [a] = swapTimes({ startMin: 600, endMin: 610 }, { startMin: 660, endMin: 720 });
@@ -167,14 +167,14 @@ describe('reorderTimes', () => {
   it('clamps to the end of the day', () => {
     const r = reorderTimes(
       [
-        { startMin: 1200, endMin: 1380 },
-        { startMin: 1380, endMin: 1440 },
+        { startMin: 1500, endMin: 1680 },
+        { startMin: 1680, endMin: 1740 },
       ],
       0,
       1,
     );
-    expect(r[0]).toEqual({ startMin: 1380, endMin: 1440 });
-    expect(r[1]).toEqual({ startMin: 1200, endMin: 1260 });
+    expect(r[0]).toEqual({ startMin: 1680, endMin: 1740 });
+    expect(r[1]).toEqual({ startMin: 1500, endMin: 1560 });
   });
 });
 

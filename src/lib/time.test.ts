@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addDays,
+  toTripDayItem,
+  tripNow,
   daysBetween,
   formatDay,
   formatDayLong,
@@ -44,8 +47,26 @@ describe('time', () => {
   it('computes Malaysia now', () => {
     const ms = Date.UTC(2026, 10, 19, 16, 30); // 00:30 on the 20th in KL
     expect(nowMyt(ms)).toEqual({ date: '2026-11-20', min: 30 });
-    expect(todayTripDay(ms)).toBe('2026-11-20');
+    expect(tripNow(ms)).toEqual({ date: '2026-11-19', min: 1470 });
+    expect(todayTripDay(ms)).toBe('2026-11-19');
+    expect(todayTripDay(Date.UTC(2026, 10, 19, 21, 0))).toBe('2026-11-20'); // 05:00 on the 20th
     expect(todayTripDay(Date.UTC(2026, 10, 30))).toBeNull();
+  });
+  it('moves legacy after-midnight items to the previous trip day', () => {
+    const base = { id: 'x', date: '2026-11-21' as const, startMin: 30, endMin: 90 };
+    expect(toTripDayItem(base)).toEqual({ ...base, date: '2026-11-20', startMin: 1470, endMin: 1530 });
+    expect(toTripDayItem({ ...base, startMin: 600, endMin: 660 })).toEqual({
+      ...base,
+      startMin: 600,
+      endMin: 660,
+    });
+    expect(toTripDayItem({ ...base, date: '2026-11-19', startMin: 60, endMin: 120 })).toEqual({
+      ...base,
+      date: '2026-11-19',
+      startMin: 300,
+      endMin: 360,
+    });
+    expect(addDays('2026-11-30', 1)).toBe('2026-12-01');
   });
   it('counts days', () => {
     expect(daysBetween('2026-11-19', '2026-11-27')).toBe(8);

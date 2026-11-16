@@ -1,3 +1,4 @@
+import { addDays, toTripDayItem } from './time';
 import type { Store, Unsub } from '../contracts/store';
 import type {
   Background,
@@ -129,8 +130,11 @@ export async function createFirestoreStore(): Promise<Store | null> {
       watchCol<ItineraryItem>(
         date === 'all'
           ? fs.collection(db, 'items')
-          : fs.query(fs.collection(db, 'items'), fs.where('date', '==', date)),
-        cb,
+          : fs.query(fs.collection(db, 'items'), fs.where('date', 'in', [date, addDays(date, 1)])),
+        (list) => {
+          const all = list.map(toTripDayItem);
+          cb(date === 'all' ? all : all.filter((i) => i.date === date));
+        },
       ),
     watchDays: (cb) => watchCol<DayConfig>(fs.collection(db, 'days'), cb),
     watchPresence: (cb) => watchCol<Presence>(fs.collection(db, 'presence'), cb),

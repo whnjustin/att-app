@@ -1,6 +1,10 @@
 // Frozen contract (docs/PLAN.md B3). Change only through the dispatcher.
 
 export type DateKey = '2026-11-19' | '2026-11-20' | '2026-11-21' | '2026-11-22';
+/** A trip day runs from 5 AM to 5 AM the next morning. Minutes past 1440 are after midnight. */
+export const DAY_START_MIN = 300;
+export const DAY_END_MIN = 1740;
+
 export const TRIP_DAYS: DateKey[] = ['2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22'];
 
 export type PersonId = 'ayyad' | 'bqck' | 'xavier' | 'nicolino' | 'justinn' | 'justinw';
@@ -48,8 +52,8 @@ export interface ItineraryItem {
   kind: 'meal' | 'poi';
   meal: 'lunch' | 'dinner' | null; // set when kind = 'meal'
   poiId: string | null; // meals may be unlinked
-  startMin: number; // minutes from 00:00, multiple of 30, 0..1410
-  endMin: number; // multiple of 30, startMin+30..1440
+  startMin: number; // minutes from 00:00 of `date`, multiple of 30, DAY_START_MIN..DAY_END_MIN-30
+  endMin: number; // multiple of 30, startMin+30..DAY_END_MIN (past 1440 is after midnight)
   createdAt: number;
   updatedAt: number;
   updatedBy: PersonId | null;

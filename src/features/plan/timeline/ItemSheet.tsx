@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DAY_END_MIN, DAY_START_MIN } from '../../../contracts/types';
 import type { DateKey, ItineraryItem, Poi, PoiCategory } from '../../../contracts/types';
 import { useStore } from '../../../contracts/store';
 import { formatDay } from '../../../lib/time';
@@ -83,10 +84,11 @@ export function ItemSheet({
   });
 
   const setTimes = (s: number, e: number) => {
-    if (target.mode === 'edit') void store.updateItem(target.itemId, { startMin: s, endMin: e });
+    if (target.mode === 'edit' && item)
+      void store.updateItem(target.itemId, { date: item.date, startMin: s, endMin: e });
     else setDraft({ start: s, end: e });
   };
-  const onStart = (v: number) => setTimes(v, v >= end ? Math.min(1440, v + 60) : end);
+  const onStart = (v: number) => setTimes(v, v >= end ? Math.min(DAY_END_MIN, v + 60) : end);
   const onEnd = (v: number) => setTimes(start, v);
 
   if (target.mode === 'edit' && !item) return null;
@@ -121,8 +123,14 @@ export function ItemSheet({
     >
       <div className="tl-sheet">
         <div className="tl-times">
-          <TimeField label="Start" value={start} min={0} max={1410} onChange={onStart} />
-          <TimeField label="End" value={end} min={start + 30} max={1440} onChange={onEnd} />
+          <TimeField
+            label="Start"
+            value={start}
+            min={DAY_START_MIN}
+            max={DAY_END_MIN - 30}
+            onChange={onStart}
+          />
+          <TimeField label="End" value={end} min={start + 30} max={DAY_END_MIN} onChange={onEnd} />
         </div>
         <SearchField value={query} onChange={setQuery} ariaLabel="Search places" />
         <ListGroup>
