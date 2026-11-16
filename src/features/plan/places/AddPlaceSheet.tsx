@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type maplibregl from 'maplibre-gl';
 import { usePois, useStore } from '../../../contracts/store';
 import type { Poi, PoiCategory } from '../../../contracts/types';
-import { createDebouncedSearch, MapCanvas, parseGoogleMapsUrl, type PlaceHit } from '../../../lib/geo';
+import {
+  createDebouncedSearch,
+  isShortLink,
+  MapCanvas,
+  parseGoogleMapsUrl,
+  resolveShortLink,
+  type PlaceHit,
+} from '../../../lib/geo';
 import {
   Button,
   Icon,
@@ -13,7 +20,7 @@ import {
   Sheet,
   TextField,
 } from '../../../ui';
-import { findDuplicate, shouldShowNotFound } from './logic';
+import { findDuplicate, shouldShowNotFound, shouldShowSearching } from './logic';
 import './places.css';
 
 export interface AddPlaceSheetProps {
@@ -67,6 +74,9 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
   const [settledQuery, setSettledQuery] = useState<string | null>(null);
   const [focusLink, setFocusLink] = useState(false);
   const [link, setLink] = useState('');
+  const [linkState, setLinkState] = useState<'idle' | 'resolving' | 'failed'>('idle');
+  const [debounced, setDebounced] = useState(false);
+  const linkToken = useRef(0);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [note, setNote] = useState('');
   const [duplicate, setDuplicate] = useState(false);
@@ -75,6 +85,13 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
   const searcher = useMemo(() => createDebouncedSearch(350), []);
 
   useEffect(() => () => searcher.cancel(), [searcher]);
+
+  useEffect(() => {
+    setDebounced(false);
+    if (!query.trim()) return;
+    const t = setTimeout(() => setDebounced(true), 350);
+    return () => clearTimeout(t);
+  }, [query]);
 
   const onQuery = (q: string) => {
     setQuery(q);
@@ -111,7 +128,35 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
 
   const onLink = (v: string) => {
     setLink(v);
+    const token = ++linkToken.current;
+    setLinkState('idle');
     if (!v.trim()) return;
+    if (isShortLink(v)) {
+      setLinkState('resolving');
+      void resolveShortLink(v).then((r) => {
+        if (token !== linkToken.current) return;
+        if (!('error' in r)) {
+          setLinkState('idle');
+          setDraft({
+            name: r.name ?? '',
+            category: 'other',
+            lat: r.lat,
+            lng: r.lng,
+            address: '',
+            osmRef: null,
+            source: 'gmaps-url',
+          });
+          setDuplicate(false);
+        } else if (r.error === 'no-coords') {
+          setLinkState('idle');
+          setMode('search');
+          onQuery(r.name);
+        } else {
+          setLinkState('failed');
+        }
+      });
+      return;
+    }
     const r = parseGoogleMapsUrl(v);
     if ('error' in r) return;
     setDraft({
@@ -125,13 +170,13 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
     });
     setDuplicate(false);
   };
-  const linkResult = link.trim() ? parseGoogleMapsUrl(link) : null;
+  const linkResult = link.trim() && !isShortLink(link) ? parseGoogleMapsUrl(link) : null;
   const linkError =
-    linkResult && 'error' in linkResult
-      ? linkResult.error === 'short-link'
-        ? 'Open the link and copy the full address bar URL'
-        : 'No coordinates in link'
-      : null;
+    linkState === 'failed'
+      ? 'Could not open link'
+      : linkResult && 'error' in linkResult
+        ? 'No coordinates in link'
+        : null;
 
   const usePin = () => {
     const c = mapRef.current?.getCenter();
@@ -179,6 +224,7 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
     setMode(mode === m ? 'search' : m);
   };
   const notFound = shouldShowNotFound({ query, settledQuery, hitCount: hits.length, failed: searchFailed });
+  const searching = shouldShowSearching({ query, settledQuery, failed: searchFailed, debounced });
   const pasteLink = () => {
     setMode('link');
     setFocusLink(true);
@@ -188,6 +234,12 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
   return (
     <div className="place-form">
       <SearchField value={query} onChange={onQuery} ariaLabel="Search places" placeholder="Search places" />
+      {searching ? (
+        <p className="place-busy" role="status" aria-live="polite">
+          <span className="place-spinner" aria-hidden="true" />
+          Searching
+        </p>
+      ) : null}
       {searchFailed ? <p className="place-status">Search unavailable</p> : null}
       {notFound ? (
         <div className="place-notfound">
@@ -230,6 +282,12 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
                 inputMode="url"
                 autoComplete="off"
               />
+              {linkState === 'resolving' ? (
+                <p className="place-busy" role="status" aria-live="polite">
+                  <span className="place-spinner" aria-hidden="true" />
+                  Opening link
+                </p>
+              ) : null}
               {linkError ? (
                 <p className="place-status" role="alert">
                   {linkError}

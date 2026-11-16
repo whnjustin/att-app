@@ -97,3 +97,14 @@ export function shouldShowNotFound(s: {
   const q = s.query.trim();
   return !s.failed && q.length >= MIN_SEARCH_CHARS && s.settledQuery === q && s.hitCount === 0;
 }
+
+/** `Searching` shows once the debounce has elapsed and the current query has not settled. */
+export function shouldShowSearching(s: {
+  query: string;
+  settledQuery: string | null;
+  failed: boolean;
+  debounced: boolean;
+}): boolean {
+  const q = s.query.trim();
+  return !s.failed && s.debounced && q.length >= MIN_SEARCH_CHARS && s.settledQuery !== q;
+}

@@ -7,6 +7,7 @@ import {
   haversineM,
   normaliseName,
   shouldShowNotFound,
+  shouldShowSearching,
   usageCounts,
 } from './logic';
 
@@ -110,5 +111,24 @@ describe('duplicates', () => {
     expect(findDuplicate({ name: 'Cafe Nine', lat: 3.152, lng: 101.7, osmRef: null }, existing)).toBeNull();
     expect(findDuplicate({ name: 'Cafe Ten', lat: 3.15, lng: 101.7, osmRef: null }, existing)).toBeNull();
     expect(findDuplicate({ name: '', lat: 3.15, lng: 101.7, osmRef: null }, existing)).toBeNull();
+  });
+});
+
+describe('shouldShowSearching', () => {
+  const base = { query: 'cafe', settledQuery: null, failed: false, debounced: true };
+  it('shows while the current query is in flight', () => {
+    expect(shouldShowSearching(base)).toBe(true);
+  });
+  it('hides before the debounce, when settled, failed, or too short', () => {
+    expect(shouldShowSearching({ ...base, debounced: false })).toBe(false);
+    expect(shouldShowSearching({ ...base, settledQuery: 'cafe' })).toBe(false);
+    expect(shouldShowSearching({ ...base, failed: true })).toBe(false);
+    expect(shouldShowSearching({ ...base, query: 'c' })).toBe(false);
+  });
+  it('hides when Not found shows', () => {
+    expect(shouldShowNotFound({ query: 'zz', settledQuery: 'zz', hitCount: 0, failed: false })).toBe(true);
+    expect(shouldShowSearching({ query: 'zz', settledQuery: 'zz', failed: false, debounced: true })).toBe(
+      false,
+    );
   });
 });
