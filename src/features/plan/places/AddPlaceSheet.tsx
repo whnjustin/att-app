@@ -4,10 +4,12 @@ import { usePois, useStore } from '../../../contracts/store';
 import type { Poi, PoiCategory } from '../../../contracts/types';
 import {
   createDebouncedSearch,
+  geocodeQuery,
   isShortLink,
   MapCanvas,
   parseGoogleMapsUrl,
   resolveShortLink,
+  searchPlaces,
   type PlaceHit,
 } from '../../../lib/geo';
 import {
@@ -148,9 +150,26 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
           });
           setDuplicate(false);
         } else if (r.error === 'no-coords') {
-          setLinkState('idle');
-          setMode('search');
-          onQuery(r.name);
+          const { name, query } = r;
+          void geocodeQuery(query, searchPlaces).then((hit) => {
+            if (token !== linkToken.current) return;
+            setLinkState('idle');
+            if (!hit) {
+              setMode('search');
+              onQuery(name);
+              return;
+            }
+            setDraft({
+              name,
+              category: hit.category,
+              lat: hit.lat,
+              lng: hit.lng,
+              address: hit.address,
+              osmRef: hit.osmRef || null,
+              source: 'gmaps-url',
+            });
+            setDuplicate(false);
+          });
         } else {
           setLinkState('failed');
         }

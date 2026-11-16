@@ -14,6 +14,7 @@ export {
   resolveShortLink,
   interpretResolved,
   extractCoordsFromHtml,
+  geocodeQuery,
   type ShortLinkResult,
 } from './shortLink';
 export { googleMapsUrl, googleEmbedUrl, wazeUrl } from './links';

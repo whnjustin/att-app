@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   extractCoordsFromHtml,
   extractNameFromHtml,
+  geocodeCandidates,
+  geocodeQuery,
   interpretResolved,
   isShortLink,
   resolveShortLink,
@@ -67,38 +69,121 @@ describe('interpretResolved', () => {
     expect(interpretResolved('https://www.google.com/maps/place/Some+Cafe', '<html></html>')).toEqual({
       error: 'no-coords',
       name: 'Some Cafe',
+      query: 'Some Cafe',
     });
     expect(interpretResolved(null, '<html></html>')).toEqual({ error: 'unresolved' });
     expect(interpretResolved(null, null)).toEqual({ error: 'unresolved' });
   });
 });
 
-describe('resolveShortLink', () => {
-  it('uses allorigins first', async () => {
-    const f = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: { url: FINAL }, contents: '' }),
+const CONSENT =
+  'https://consent.google.com/ml?continue=https://maps.google.com/maps?q%3DSome%2BCafe%2B@%2BArea,%2B6,%2BJln%2BTest%2B4,%2BArea,%2B59100%2BKuala%2BLumpur%26ftid%3D0x1:0x2%26entry%3Dgps&gl=MY&hl=en';
+
+describe('consent pages', () => {
+  it('unwraps continue= and returns the name and full query', () => {
+    expect(interpretResolved(CONSENT, null)).toEqual({
+      error: 'no-coords',
+      name: 'Some Cafe @ Area',
+      query: 'Some Cafe @ Area, 6, Jln Test 4, Area, 59100 Kuala Lumpur',
     });
+  });
+  it('reads the target from a consent form in HTML', () => {
+    const html =
+      '<form action="https://consent.google.com/save"><input type="hidden" name="continue" value="https://www.google.com/maps/place/Some+Cafe/data=!4m2!3m1!1s0x0:0x0!3d3.15!4d101.71?entry=tts&amp;g_st=ic"></form>';
+    expect(interpretResolved('https://consent.google.com/ml?x=1', html)).toEqual({
+      lat: 3.15,
+      lng: 101.71,
+      name: 'Some Cafe',
+    });
+  });
+});
+
+describe('geocodeQuery', () => {
+  const hit = (name: string, lat = 3.13) => ({
+    name,
+    address: 'Area',
+    lat,
+    lng: 101.67,
+    osmRef: '',
+    category: 'other' as const,
+  });
+  it('builds candidates from specific to broad', () => {
+    expect(geocodeCandidates('Some Cafe @ Area, 6, Jln Test 4, Area, 59100 Kuala Lumpur')).toEqual([
+      'Some Cafe @ Area, 6, Jalan Test 4, Area, 59100 Kuala Lumpur',
+      'Some Cafe @ Area',
+      'Jalan Test 4, Area, Kuala Lumpur',
+      'Jalan Test 4, Area',
+      'Some Cafe',
+    ]);
+  });
+  it('falls through empty and failing searches to the street', async () => {
+    const search = vi.fn(async (q: string) => {
+      if (q.startsWith('Some Cafe @ Area,')) throw new Error('down');
+      if (q.startsWith('Jalan Test 4, Area, Kuala')) return [hit('Jalan Test 4')];
+      return [];
+    });
+    expect(
+      await geocodeQuery('Some Cafe @ Area, 6, Jln Test 4, Area, 59100 Kuala Lumpur', search),
+    ).toMatchObject({
+      name: 'Jalan Test 4',
+    });
+  });
+  it('returns null when nothing matches', async () => {
+    expect(await geocodeQuery('Nowhere, 1, Jln X', async () => [])).toBeNull();
+  });
+});
+
+type Route = Record<string, () => unknown>;
+function routeFetch(routes: Route) {
+  return vi.fn(async (url: string) => {
+    for (const [k, v] of Object.entries(routes)) {
+      if (String(url).includes(k)) {
+        const body = v();
+        if (body instanceof Error) throw body;
+        return {
+          ok: true,
+          json: async () => body,
+          text: async () => String(body),
+        };
+      }
+    }
+    throw new Error('blocked');
+  });
+}
+
+describe('resolveShortLink', () => {
+  it('asks every proxy in parallel', async () => {
+    const f = routeFetch({});
     vi.stubGlobal('fetch', f);
+    await resolveShortLink('https://maps.app.goo.gl/AbC?g_st=ic');
+    const urls = f.mock.calls.map((c) => String(c[0]));
+    expect(urls.some((u) => u.includes('api.allorigins.win/get?url=https%3A%2F%2Fmaps.app.goo.gl'))).toBe(
+      true,
+    );
+    expect(urls.some((u) => u.includes('unshorten.me/json/https://maps.app.goo.gl/AbC'))).toBe(true);
+    expect(urls.some((u) => u.includes('codetabs.com'))).toBe(true);
+    expect(urls.some((u) => u.includes('corsproxy.io/?url='))).toBe(true);
+  });
+  it('takes a pin from allorigins', async () => {
+    vi.stubGlobal('fetch', routeFetch({ allorigins: () => ({ status: { url: FINAL }, contents: '' }) }));
     expect(await resolveShortLink('https://maps.app.goo.gl/AbC?g_st=ic')).toEqual({
       lat: 3.1479,
       lng: 101.7131,
       name: 'Some Cafe',
     });
-    expect(f).toHaveBeenCalledTimes(1);
-    expect(String(f.mock.calls[0][0])).toContain('api.allorigins.win/get?url=https%3A%2F%2Fmaps.app.goo.gl');
   });
-  it('falls back to corsproxy on failure', async () => {
-    const f = vi
-      .fn()
-      .mockRejectedValueOnce(new Error('down'))
-      .mockResolvedValueOnce({ ok: true, text: async () => HTML });
-    vi.stubGlobal('fetch', f);
-    const r = await resolveShortLink('maps.app.goo.gl/AbC');
-    expect(r).toMatchObject({ lat: 3.148, lng: 101.7132 });
-    expect(String(f.mock.calls[1][0])).toContain('corsproxy.io/?url=');
+  it('takes a pin from an HTML proxy when others fail', async () => {
+    vi.stubGlobal('fetch', routeFetch({ corsproxy: () => HTML, allorigins: () => new Error('down') }));
+    expect(await resolveShortLink('maps.app.goo.gl/AbC')).toMatchObject({ lat: 3.148, lng: 101.7132 });
   });
-  it('reports unresolved when both fail', async () => {
+  it('returns the query from unshorten.me consent redirect', async () => {
+    vi.stubGlobal('fetch', routeFetch({ 'unshorten.me': () => ({ resolved_url: CONSENT, success: true }) }));
+    expect(await resolveShortLink('https://maps.app.goo.gl/AbC')).toMatchObject({
+      error: 'no-coords',
+      name: 'Some Cafe @ Area',
+    });
+  });
+  it('reports unresolved when all fail', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('down')));
     expect(await resolveShortLink('https://maps.app.goo.gl/AbC')).toEqual({ error: 'unresolved' });
   });
