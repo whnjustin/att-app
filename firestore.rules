@@ -45,8 +45,17 @@ service cloud.firestore {
       allow create, update: if isMember() && validPoi(request.resource.data);
     }
 
+    match /backgrounds/{id} {
+      allow read, delete: if isMember();
+      allow create: if isMember()
+        && request.resource.data.dataUrl is string
+        && request.resource.data.dataUrl.size() < 900000
+        && request.resource.data.dataUrl.matches('^data:image/(jpeg|png|webp);base64,.*');
+      allow update: if false;
+    }
+
     match /{col}/{id} {
-      allow read, write: if isMember() && col in ['people', 'days', 'routes', 'presence', 'meta'];
+      allow read, write: if isMember() && col in ['people', 'days', 'routes', 'presence', 'meta', 'prefs'];
     }
   }
 }

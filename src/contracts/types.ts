@@ -82,3 +82,19 @@ export interface RouteLeg {
   durationS: number;
   fetchedAt: number;
 }
+
+/** A shared background image. dataUrl is a compressed JPEG, under 900 KB. */
+export interface Background {
+  id: string;
+  dataUrl: string;
+  createdBy: PersonId | null;
+  createdAt: number;
+}
+
+/** Per person preferences. Doc id is the person id. */
+export interface Prefs {
+  personId: PersonId;
+  backgroundId: string | null;
+}
+
+export const BACKGROUND_MAX_CHARS = 900_000;

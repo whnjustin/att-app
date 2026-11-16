@@ -3,12 +3,14 @@
 
 import type { Store, Unsub } from '../contracts/store';
 import type {
+  Background,
   DateKey,
   DayConfig,
   ItineraryItem,
   Person,
   PersonId,
   Poi,
+  Prefs,
   Presence,
   RouteLeg,
 } from '../contracts/types';
@@ -28,6 +30,8 @@ interface State {
   days: DayConfig[];
   presence: Presence[];
   routes: Record<string, RouteLeg>;
+  backgrounds: Background[];
+  prefs: Prefs[];
 }
 
 const STATE_KEY = 'att.mock.v1';
@@ -45,6 +49,8 @@ function initialState(): State {
     days: defaultDays(),
     presence: [],
     routes: {},
+    backgrounds: [],
+    prefs: [],
   };
 }
 
@@ -246,6 +252,30 @@ export function createMockStore(opts: MockStoreOptions = {}): Store {
           page: 'overview',
           lastSeen: t,
         });
+      });
+    },
+
+    watchBackgrounds: (cb) => watch((s) => s.backgrounds, cb),
+    async addBackground(dataUrl) {
+      const id = newId('bg');
+      commit((s) => {
+        s.backgrounds.push({ id, dataUrl, createdBy: me, createdAt: now() });
+      });
+      return id;
+    },
+    async deleteBackground(id) {
+      commit((s) => {
+        s.backgrounds = s.backgrounds.filter((b) => b.id !== id);
+        for (const p of s.prefs) if (p.backgroundId === id) p.backgroundId = null;
+      });
+    },
+    watchPrefs: (cb) => watch((s) => s.prefs, cb),
+    async setMyBackground(backgroundId) {
+      const personId = me;
+      if (!personId) return;
+      commit((s) => {
+        s.prefs = s.prefs.filter((p) => p.personId !== personId);
+        s.prefs.push({ personId, backgroundId });
       });
     },
 

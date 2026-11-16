@@ -52,3 +52,18 @@ describe('mockStore', () => {
     expect(s.me()).toBe('xavier');
   });
 });
+
+describe('mockStore backgrounds', () => {
+  it('adds, selects and deletes a background', async () => {
+    const s = createMockStore({ ephemeral: true });
+    await s.setMe('bqck');
+    const id = await s.addBackground('data:image/jpeg;base64,AAAA');
+    await s.setMyBackground(id);
+    let prefs: { personId: string; backgroundId: string | null }[] = [];
+    s.watchPrefs((p) => (prefs = p));
+    expect(prefs).toEqual([{ personId: 'bqck', backgroundId: id }]);
+    await s.deleteBackground(id);
+    await tick();
+    expect(prefs[0].backgroundId).toBeNull();
+  });
+});
