@@ -1,0 +1,133 @@
+.places {
+  margin-top: var(--s8);
+  min-width: 0;
+}
+.places-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+.places-head .section-title {
+  margin: 0;
+}
+.places-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+.places-empty {
+  margin: 0;
+  padding: var(--s4);
+  background: var(--surface);
+  border-radius: var(--r-card);
+  color: var(--label-2);
+  font: var(--t-body);
+}
+.place-trailing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+}
+.place-count {
+  font: var(--t-callout);
+  color: var(--label-2);
+  min-width: 1ch;
+  text-align: right;
+}
+.place-plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--hit);
+  height: var(--hit);
+  margin: calc(var(--s2) * -1) calc(var(--s2) * -1) calc(var(--s2) * -1) 0;
+  border-radius: var(--r-capsule);
+  color: var(--tint);
+  cursor: pointer;
+}
+.place-plus:focus-visible {
+  outline: 2px solid var(--tint);
+  outline-offset: -2px;
+}
+.place-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding-top: var(--s2);
+}
+.place-embed {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+}
+.place-embed iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.place-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -100%);
+  color: var(--destructive);
+  pointer-events: none;
+  display: flex;
+}
+.place-links {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s2);
+}
+.place-links .btn {
+  text-decoration: none;
+}
+.place-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+.place-status {
+  margin: 0;
+  font: var(--t-subhead);
+  color: var(--label-2);
+}
+.place-chip {
+  display: inline-block;
+  padding: 2px var(--s2);
+  border-radius: var(--r-capsule);
+  background: var(--surface-2);
+  color: var(--label-2);
+  font: var(--t-caption);
+}
+.place-pinmap {
+  position: relative;
+  height: 240px;
+  overflow: hidden;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+}
+.place-crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  background:
+    linear-gradient(var(--destructive), var(--destructive)) center / 2px 100% no-repeat,
+    linear-gradient(var(--destructive), var(--destructive)) center / 100% 2px no-repeat;
+}
+.place-form .seg-option,
+.place-details .seg-option {
+  font-size: 14px;
+  padding-inline: var(--s1);
+}
