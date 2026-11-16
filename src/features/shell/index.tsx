@@ -3,7 +3,7 @@ import { AvatarStack, IconButton, TopBar } from '../../ui';
 import { usePeople, usePresence } from '../../contracts/store';
 import type { Route } from '../../lib/router';
 import { onlinePeople } from './online';
-import { useHeartbeat } from './useHeartbeat';
+import { usePresenceHeartbeat } from '../../lib/presence';
 import { ShellSidebar } from './ShellSidebar';
 import './shell.css';
 
@@ -14,7 +14,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
 
 function ShellFrame({ page, children }: { page: 'overview' | 'plan'; children: ReactNode }) {
   const [open, setOpen] = useState(false);
-  useHeartbeat(page);
+  usePresenceHeartbeat(page);
   const online = onlinePeople(usePresence(), usePeople());
   const title = page === 'plan' ? 'Day plan' : 'ATT in KL';
 

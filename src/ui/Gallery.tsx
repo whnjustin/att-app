@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { MapCanvas } from '../lib/geo';
 import {
   Avatar,
   AvatarStack,
@@ -167,6 +168,12 @@ export default function Gallery() {
               }
             />
           </ListGroup>
+        </Section>
+
+        <Section label="Map">
+          <div style={{ aspectRatio: '4 / 3', borderRadius: 'var(--r-card)', overflow: 'hidden' }}>
+            <MapCanvas onReady={() => {}} />
+          </div>
         </Section>
 
         <Section label="Overlays">

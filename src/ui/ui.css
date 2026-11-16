@@ -362,6 +362,20 @@
 .row-chevron.open {
   transform: rotate(90deg);
 }
+.row-line {
+  display: flex;
+  align-items: center;
+}
+.row-line > .row-main {
+  flex: 1;
+  min-width: 0;
+}
+.row-action {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding-right: var(--s2);
+}
 .row-expanded {
   padding: 0 var(--s4) var(--s3);
 }

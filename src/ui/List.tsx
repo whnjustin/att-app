@@ -35,6 +35,8 @@ export interface ListRowProps {
   title: string;
   subtitle?: string;
   trailing?: ReactNode;
+  /** A separate control after the row, outside the row button (avoids nested buttons). */
+  action?: ReactNode;
   chevron?: boolean;
   onClick?: () => void;
   /** When defined the row is expandable and reports aria-expanded. */
@@ -47,6 +49,7 @@ export function ListRow({
   title,
   subtitle,
   trailing,
+  action,
   chevron,
   onClick,
   expanded,
@@ -66,14 +69,22 @@ export function ListRow({
       ) : null}
     </>
   );
+  const main = interactive ? (
+    <button type="button" className="row-main row-button" onClick={onClick} aria-expanded={expanded}>
+      {body}
+    </button>
+  ) : (
+    <div className="row-main">{body}</div>
+  );
   return (
     <li className="list-row">
-      {interactive ? (
-        <button type="button" className="row-main row-button" onClick={onClick} aria-expanded={expanded}>
-          {body}
-        </button>
+      {action ? (
+        <div className="row-line">
+          {main}
+          <span className="row-action">{action}</span>
+        </div>
       ) : (
-        <div className="row-main">{body}</div>
+        main
       )}
       {expanded && expandedContent ? <div className="row-expanded">{expandedContent}</div> : null}
     </li>
