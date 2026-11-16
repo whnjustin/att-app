@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+*.local
+.env*
+seed.local.json
+.DS_Store
+.firebase/
+firebase-debug.log
+firestore-debug.log
