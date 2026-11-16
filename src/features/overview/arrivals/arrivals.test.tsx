@@ -50,6 +50,20 @@ describe('ArrivalsCalendar', () => {
     expect(screen.queryByTestId('now-line')).toBeNull();
   });
 
+  it('draws plain bars: square right end only when running off, no dots or chevrons', async () => {
+    const { container } = render(
+      <StoreProvider store={createMockStore({ ephemeral: true })}>
+        <ArrivalsCalendar now={noon} />
+      </StoreProvider>,
+    );
+    await screen.findAllByRole('button');
+    expect(container.querySelectorAll('.arr-dot, .arr-more, svg.arr-more').length).toBe(0);
+    const ayyad = screen.getByRole('button', { name: /^Ayyad/ }).querySelector('.arr-bar');
+    const bqck = screen.getByRole('button', { name: /^Bqck/ }).querySelector('.arr-bar');
+    expect(ayyad?.classList.contains('off')).toBe(true);
+    expect(bqck?.classList.contains('off')).toBe(false);
+  });
+
   it('saves edits through updatePerson', async () => {
     const store = setup();
     fireEvent.click(await screen.findByRole('button', { name: /^Bqck/ }));

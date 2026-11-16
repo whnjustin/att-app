@@ -11,7 +11,7 @@ import {
   minToHHmm,
   nowMyt,
 } from '../../../lib/time';
-import { Avatar, Button, DayField, Icon, Sheet, TextField, TimeField } from '../../../ui';
+import { Avatar, Button, DayField, Sheet, TextField, TimeField } from '../../../ui';
 import { barLayout, nowFraction, sortPeople } from './layout';
 import './arrivals.css';
 
@@ -90,17 +90,13 @@ export function ArrivalsCalendar({ now = nowMyt }: ArrivalsCalendarProps = {}) {
                     {b.kind === 'none' ? <span className="arr-unset">Dates not set</span> : null}
                     {b.kind !== 'none' ? (
                       <span
-                        className={`arr-bar${b.kind === 'full' ? ' local' : ''}`}
+                        className={`arr-bar${b.kind === 'full' ? ' local' : b.runsOffRight ? ' off' : ''}`}
                         style={{
                           left: `${b.start * 100}%`,
                           width: `${(b.end - b.start) * 100}%`,
                           background: `var(${p.colorToken})`,
                         }}
-                      >
-                        {b.kind === 'bar' ? <span className="arr-dot start" /> : null}
-                        {b.kind === 'bar' && !b.runsOffRight ? <span className="arr-dot end" /> : null}
-                        {b.runsOffRight ? <Icon name="chevron" size={14} className="arr-more" /> : null}
-                      </span>
+                      />
                     ) : null}
                   </span>
                 </button>
