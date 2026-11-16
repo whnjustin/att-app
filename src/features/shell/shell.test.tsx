@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { StoreProvider } from '../../contracts/store';
 import type { Person, Presence } from '../../contracts/types';
@@ -23,27 +23,78 @@ describe('onlinePeople', () => {
   });
 });
 
-describe('Shell sidebar', () => {
-  it('opens by button and closes by Escape and scrim', async () => {
-    const store = createMockStore({ reset: true });
-    await store.ensureSeed();
+function mount(route: Parameters<typeof Shell>[0]['route'] = { page: 'overview' }) {
+  const store = createMockStore({ reset: true });
+  return store.ensureSeed().then(() => {
     render(
       <StoreProvider store={store}>
-        <Shell route={{ page: 'overview' }}>
+        <Shell route={route}>
           <main>content</main>
         </Shell>
       </StoreProvider>,
     );
-    expect(screen.queryByRole('dialog')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeTruthy();
-    expect(screen.getByText('You are')).toBeTruthy();
+    return store;
+  });
+}
+
+describe('Shell nav', () => {
+  it('opens the popover, navigates, and closes by Escape and outside tap', async () => {
+    await mount();
+    expect(screen.queryByRole('menu')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Pages' }));
+    expect(screen.getByRole('menuitemradio', { name: 'Overview' }).getAttribute('aria-checked')).toBe('true');
     fireEvent.keyDown(document, { key: 'Escape' });
-    await act(async () => {});
-    expect(screen.queryByRole('dialog')).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Open menu' }));
-    fireEvent.click(document.querySelector('.scrim') as Element);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByRole('menu')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Pages' }));
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole('menu')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Pages' }));
+    fireEvent.click(screen.getByRole('menuitemradio', { name: 'Day plan' }));
+    expect(window.location.hash).toMatch(/^#\/plan/);
+    expect(screen.queryByRole('menu')).toBeNull();
+  });
+
+  it('shows the page title', async () => {
+    await mount({ page: 'plan', date: null });
+    expect(screen.getByRole('heading', { name: 'Day plan' })).toBeTruthy();
+  });
+});
+
+describe('Shell accounts', () => {
+  it('switches person and picks a background', async () => {
+    const store = await mount();
+    const id = await store.addBackground('data:image/jpeg;base64,AAAA');
+    fireEvent.click(screen.getByRole('button', { name: 'Accounts' }));
+    expect(screen.getByRole('dialog', { name: 'Accounts' })).toBeTruthy();
+    const setMe = vi.spyOn(store, 'setMe');
+    const radios = screen.getAllByRole('radio');
+    await act(async () => {
+      fireEvent.click(radios[1]);
+    });
+    expect(setMe).toHaveBeenCalledTimes(1);
+    const spy = vi.spyOn(store, 'setMyBackground');
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Background' }));
+    });
+    expect(spy).toHaveBeenCalledWith(id);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'None' }));
+    });
+    expect(spy).toHaveBeenCalledWith(null);
+  });
+
+  it('deletes an own upload in two steps', async () => {
+    const store = await mount();
+    const spy = vi.spyOn(store, 'deleteBackground');
+    await store.setMe('ayyad');
+    await store.addBackground('data:image/jpeg;base64,AAAA');
+    fireEvent.click(screen.getByRole('button', { name: 'Accounts' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete background' }));
+    expect(spy).not.toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it('renders children only on the ui route', () => {
@@ -55,6 +106,6 @@ describe('Shell sidebar', () => {
         </Shell>
       </StoreProvider>,
     );
-    expect(screen.queryByRole('button', { name: 'Open menu' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Pages' })).toBeNull();
   });
 });

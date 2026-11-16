@@ -1,4 +1,5 @@
 .shell-page {
+  position: relative;
   animation: shell-fade var(--dur-fast) ease-out;
 }
 @keyframes shell-fade {
@@ -6,14 +7,199 @@
     opacity: 0;
   }
 }
-.shell-side {
+
+/* Fixed full viewport background with a veil in the page colour. */
+.shell-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+.shell-bg-veil {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+}
+
+/* Titles */
+.shell-title {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 68px) max(var(--gutter), env(safe-area-inset-right)) 0
+    max(var(--gutter), env(safe-area-inset-left));
+}
+.shell-title-home {
+  font: 700 46px/1.05 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.shell-title-plan {
+  font: var(--t-large);
+}
+.shell-page .page {
+  padding-top: var(--s3);
+}
+
+/* Floating controls */
+.shell-fab {
+  width: 56px;
+  height: 56px;
+}
+.shell-nav {
+  position: fixed;
+  z-index: 20;
+  bottom: calc(var(--s4) + env(safe-area-inset-bottom));
+  left: max(var(--gutter), calc((100vw - var(--content-max)) / 2 + var(--gutter)));
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+}
+.shell-pop {
+  min-width: 190px;
+  padding: var(--s2);
+  border-radius: var(--r-card);
+  display: flex;
+  flex-direction: column;
+}
+.shell-pop-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--s4);
+  min-height: 44px;
+  padding: 0 var(--s3);
+  border: 0;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: var(--label);
+  font: var(--t-body);
+  cursor: pointer;
+}
+.shell-pop-item:hover {
+  background: var(--separator);
 }
 .shell-check {
   color: var(--tint);
 }
+
+.shell-profile {
+  position: fixed;
+  z-index: 20;
+  top: calc(var(--s3) + env(safe-area-inset-top));
+  right: max(var(--gutter), calc((100vw - var(--content-max)) / 2 + var(--gutter)));
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--label);
+  cursor: pointer;
+}
+.shell-ring {
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--person-xavier);
+  pointer-events: none;
+}
+
+/* Accounts */
+.acc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s6);
+  padding-bottom: var(--s4);
+}
+.acc-h {
+  font: var(--t-headline);
+  margin: 0 0 var(--s3);
+}
+.acc-people {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s3);
+}
+.acc-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  min-height: 44px;
+  padding: var(--s1);
+  border: 0;
+  background: transparent;
+  color: var(--label);
+  font: var(--t-footnote);
+  cursor: pointer;
+}
+.acc-av {
+  display: grid;
+  border-radius: 50%;
+  padding: 3px;
+  box-shadow: 0 0 0 2px transparent;
+}
+.acc-av.on {
+  box-shadow: 0 0 0 3px var(--tint);
+}
+.acc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: var(--s3);
+}
+.acc-cell {
+  position: relative;
+}
+.acc-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s1);
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-control);
+  background-color: var(--surface-2);
+  background-size: cover;
+  background-position: center;
+  color: var(--label);
+  font: var(--t-subhead);
+  cursor: pointer;
+}
+.acc-tile.on {
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--tint);
+}
+.acc-del {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: var(--r-capsule);
+  border: 0;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  color: var(--destructive);
+  cursor: pointer;
+}
+.acc-del-confirm {
+  padding: 0 var(--s3);
+  font: var(--t-footnote);
+  font-weight: 600;
+}
+.acc-error {
+  margin: var(--s3) 0 0;
+  color: var(--destructive);
+  font: var(--t-subhead);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .shell-page {
     animation: none;
