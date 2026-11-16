@@ -1,0 +1,21 @@
+.shell-page {
+  animation: shell-fade var(--dur-fast) ease-out;
+}
+@keyframes shell-fade {
+  from {
+    opacity: 0;
+  }
+}
+.shell-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.shell-check {
+  color: var(--tint);
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell-page {
+    animation: none;
+  }
+}
