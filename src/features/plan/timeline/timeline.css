@@ -116,7 +116,6 @@
 }
 .tl-block.linked .tl-inner {
   background: color-mix(in srgb, var(--cat) 20%, var(--surface));
-  box-shadow: inset 3px 0 0 var(--cat);
 }
 .tl-block.unlinked .tl-inner {
   background: var(--surface-2);
@@ -125,9 +124,7 @@
   color: var(--label-2);
 }
 .tl-block.dragging .tl-inner {
-  box-shadow:
-    inset 3px 0 0 var(--cat),
-    0 8px 24px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
 }
 .tl-block:focus-visible .tl-inner,
 .tl-block.selected .tl-inner {

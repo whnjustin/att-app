@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { TRIP_DAYS, type DateKey, type ItineraryItem, type Poi } from '../../../contracts/types';
-import { useDays, useItems, usePois, useStore } from '../../../contracts/store';
+import { useItems, usePois, useStore } from '../../../contracts/store';
 import { navigate } from '../../../lib/router';
 import { formatDay, formatMin, formatRange, todayTripDay } from '../../../lib/time';
 import { legIndexByItem } from '../../../lib/geo';
@@ -73,7 +73,6 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
 
   const items = useItems(day);
   const pois = usePois();
-  const days = useDays();
 
   const [hold, setHold] = useState<Hold | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -138,10 +137,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
   );
   const placement = useMemo(() => packColumns(shown.map((i) => ({ ...i, id: i.id }))), [shown]);
   const poiById = useMemo(() => new Map(pois.map((p) => [p.id, p])), [pois]);
-  const legs = useMemo(() => {
-    const cfg = days.find((d) => d.date === day);
-    return legIndexByItem(shown, pois, cfg ?? { startPoiId: '', endPoiId: '' });
-  }, [shown, pois, days, day]);
+  const legs = useMemo(() => legIndexByItem(shown, pois), [shown, pois]);
 
   const commit = useCallback(
     (id: string, span: Span) => {

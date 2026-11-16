@@ -15,6 +15,7 @@ import {
   stopsFor,
   wazeUrl,
 } from './index';
+import { stopColorVar } from './legs';
 import { enqueueOsrm, resetOsrmQueue } from './osrm';
 import { clearRouteMemory } from './routeService';
 
@@ -280,48 +281,48 @@ describe('legKey', () => {
 });
 
 describe('buildLegs', () => {
-  it('sorts, wraps with start and end', () => {
+  it('sorts and links consecutive stops without the stay', () => {
     const legs = buildLegs([item('i2', 900, 'b'), item('i1', 600, 'a')], pois, day);
-    expect(legs.map((l) => [l.from.id, l.to.id])).toEqual([
-      ['home', 'a'],
-      ['a', 'b'],
-      ['b', 'home'],
-    ]);
-    expect(legs.map((l) => l.index)).toEqual([0, 1, 2]);
+    expect(legs.map((l) => [l.from.id, l.to.id])).toEqual([['a', 'b']]);
+    expect(legs[0].index).toBe(0);
     expect(legs[0].colorVar).toBe('--leg-1');
-    expect(legs[0].key).toBe(legKey(pois[0], pois[1]));
+    expect(legs[0].key).toBe(legKey(pois[1], pois[2]));
   });
   it('skips unlinked meals and missing pois', () => {
-    const legs = buildLegs(
-      [item('m', 700, null, 'meal'), item('x', 800, 'gone'), item('i', 900, 'a')],
-      pois,
-      day,
-    );
-    expect(legs.map((l) => l.to.id)).toEqual(['a', 'home']);
+    const items = [
+      item('m', 700, null, 'meal'),
+      item('x', 800, 'gone'),
+      item('i', 900, 'a'),
+      item('j', 950, 'b'),
+    ];
+    expect(stopsFor(items, pois, day).map((s) => s.poi.id)).toEqual(['a', 'b']);
+    expect(buildLegs(items, pois, day).map((l) => l.to.id)).toEqual(['b']);
   });
   it('drops consecutive duplicates', () => {
     const legs = buildLegs([item('i1', 600, 'home'), item('i2', 700, 'a'), item('i3', 800, 'a')], pois, day);
-    expect(legs.map((l) => [l.from.id, l.to.id])).toEqual([
-      ['home', 'a'],
-      ['a', 'home'],
-    ]);
+    expect(legs.map((l) => [l.from.id, l.to.id])).toEqual([['home', 'a']]);
   });
-  it('no legs when nothing is linked and start equals end', () => {
+  it('no legs for zero or one stop', () => {
     expect(buildLegs([], pois, day)).toEqual([]);
+    expect(buildLegs([item('i1', 600, 'a')], pois, day)).toEqual([]);
   });
-  it('wraps colours after 8', () => {
-    const items = Array.from({ length: 9 }, (_, i) => item(`i${i}`, i * 30, i % 2 ? 'a' : 'b'));
+  it('wraps colours after 8 and the leg takes the colour of the stop it leaves', () => {
+    const items = Array.from({ length: 10 }, (_, i) => item(`i${i}`, i * 30, i % 2 ? 'a' : 'b'));
     const legs = buildLegs(items, pois, day);
-    expect(legs).toHaveLength(10);
+    expect(legs).toHaveLength(9);
     expect(legs[7].colorVar).toBe('--leg-8');
     expect(legs[8].colorVar).toBe('--leg-1');
-    expect(legs[9].colorVar).toBe('--leg-2');
+    expect(stopColorVar(1)).toBe('--leg-1');
+    expect(stopColorVar(9)).toBe('--leg-1');
+    expect(stopColorVar(10)).toBe('--leg-2');
   });
-  it('stopsFor and legIndexByItem agree', () => {
+  it('stopsFor and legIndexByItem agree on 1 based stop numbers', () => {
     const items = [item('i1', 600, 'a'), item('i2', 700, 'a'), item('i3', 800, 'b')];
     const stops = stopsFor(items, pois, day);
-    expect(stops.map((s) => s.poi.id)).toEqual(['home', 'a', 'b', 'home']);
-    expect(stops.map((s) => s.role)).toEqual(['start', 'item', 'item', 'end']);
+    expect(stops.map((s) => [s.poi.id, s.number, s.itemId])).toEqual([
+      ['a', 1, 'i1'],
+      ['b', 2, 'i3'],
+    ]);
     expect(legIndexByItem(items, pois, day)).toEqual({ i1: 1, i3: 2 });
   });
 });
@@ -378,7 +379,7 @@ describe('resolveLegs', () => {
       }),
     };
   }
-  const legs = () => buildLegs([item('i1', 600, 'a')], pois, { startPoiId: 'home', endPoiId: 'a' });
+  const legs = () => buildLegs([item('i0', 500, 'home'), item('i1', 600, 'a')], pois, day);
 
   beforeEach(() => {
     clearRouteMemory();

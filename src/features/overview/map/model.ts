@@ -1,6 +1,10 @@
 import type { DateKey, Poi } from '../../../contracts/types';
 import { TRIP_DAYS } from '../../../contracts/types';
 import type { Leg, Stop } from '../../../lib/geo';
+import { stopColorVar } from '../../../lib/geo/legs';
+import { snap30 } from '../../../lib/time';
+
+const DAY_MIN = 1440;
 
 export type LngLat = [number, number];
 
@@ -97,32 +101,48 @@ export interface MarkerModel {
   key: string;
   poi: Poi;
   kind: 'house' | 'number';
-  /** Stop number for numbered markers. */
+  /** Stop number for numbered markers, 0 for residences. */
   n: number;
-  /** Colour of the arriving leg, for numbered markers. */
+  /** Colour of the stop, for numbered markers. */
   colorVar: string | null;
 }
 
-/** One marker per stop. Start and end stays render as house markers; the same POI for both is one marker. */
-export function markerModels(stops: Stop[], legs: Leg[]): MarkerModel[] {
-  const out: MarkerModel[] = [];
-  const houses = new Set<string>();
+/** Numbered markers for the stops, plus a quiet house marker for every residence. */
+export function markerModels(stops: Stop[], residences: Poi[]): MarkerModel[] {
+  const out: MarkerModel[] = residences.map((poi) => ({
+    key: `house:${poi.id}`,
+    poi,
+    kind: 'house',
+    n: 0,
+    colorVar: null,
+  }));
   for (const s of stops) {
-    if (s.role === 'item') {
-      const leg = legs[s.number - 1];
-      out.push({
-        key: `item:${s.itemId ?? s.number}`,
-        poi: s.poi,
-        kind: 'number',
-        n: s.number,
-        colorVar: leg ? leg.colorVar : null,
-      });
-    } else if (!houses.has(s.poi.id)) {
-      houses.add(s.poi.id);
-      out.push({ key: `house:${s.poi.id}`, poi: s.poi, kind: 'house', n: 0, colorVar: null });
-    }
+    out.push({
+      key: `item:${s.itemId}`,
+      poi: s.poi,
+      kind: 'number',
+      n: s.number,
+      colorVar: stopColorVar(s.number),
+    });
   }
   return out;
+}
+
+export interface Span {
+  startMin: number;
+  endMin: number;
+}
+
+/**
+ * Swap two stops in time. The earlier and later items exchange start times and each keeps its own
+ * duration, on the 30 minute grid, with the end clamped to the end of the day.
+ */
+export function swapTimes(a: Span, b: Span): [Span, Span] {
+  const place = (start: number, own: Span): Span => {
+    const dur = Math.max(30, snap30(own.endMin - own.startMin));
+    return { startMin: start, endMin: Math.min(DAY_MIN, start + dur) };
+  };
+  return [place(b.startMin, a), place(a.startMin, b)];
 }
 
 export function boundsOf(points: LngLat[]): [LngLat, LngLat] | null {

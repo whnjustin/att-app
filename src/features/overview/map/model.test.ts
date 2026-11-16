@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Poi } from '../../../contracts/types';
 import type { Leg, Stop } from '../../../lib/geo';
 import { formatDistance, formatDuration } from './format';
-import { boundsOf, defaultDay, displayLegs, lineCollection, markerModels } from './model';
+import { boundsOf, defaultDay, displayLegs, lineCollection, markerModels, swapTimes } from './model';
 
 const poi = (id: string, lng: number, lat: number): Poi => ({
   id,
@@ -96,29 +96,36 @@ describe('displayLegs and lineCollection', () => {
 });
 
 describe('markerModels', () => {
-  const stop = (p: Poi, role: Stop['role'], number: number, itemId: string | null): Stop => ({
-    poi: p,
-    role,
-    number,
-    itemId,
-  });
-  it('uses the arriving leg colour and merges a shared start and end', () => {
+  const stop = (p: Poi, number: number, itemId: string): Stop => ({ poi: p, number, itemId });
+  it('numbers stops with their colour and adds a house per residence', () => {
     const C = poi('c', 101.3, 3.3);
-    const stops = [
-      stop(A, 'start', 0, null),
-      stop(B, 'item', 1, 'i1'),
-      stop(C, 'item', 2, 'i2'),
-      stop(A, 'end', 3, null),
-    ];
-    const legs = [leg(0, A, B), leg(1, B, C), leg(2, C, A)];
-    const m = markerModels(stops, legs);
+    const H = poi('h', 101.0, 3.0);
+    const m = markerModels([stop(B, 1, 'i1'), stop(C, 2, 'i2')], [H]);
     expect(m.map((x) => x.kind)).toEqual(['house', 'number', 'number']);
+    expect(m[0]).toMatchObject({ n: 0, colorVar: null });
     expect(m[1]).toMatchObject({ n: 1, colorVar: '--leg-1' });
     expect(m[2]).toMatchObject({ n: 2, colorVar: '--leg-2' });
   });
-  it('keeps separate houses for different start and end', () => {
-    const m = markerModels([stop(A, 'start', 0, null), stop(B, 'end', 1, null)], [leg(0, A, B)]);
-    expect(m.map((x) => x.kind)).toEqual(['house', 'house']);
+  it('wraps colours after 8', () => {
+    const m = markerModels([stop(A, 9, 'i9')], []);
+    expect(m[0].colorVar).toBe('--leg-1');
+  });
+});
+
+describe('swapTimes', () => {
+  it('exchanges start times and keeps own durations', () => {
+    const [a, b] = swapTimes({ startMin: 600, endMin: 660 }, { startMin: 720, endMin: 870 });
+    expect(a).toEqual({ startMin: 720, endMin: 780 });
+    expect(b).toEqual({ startMin: 600, endMin: 750 });
+  });
+  it('clamps to the end of the day', () => {
+    const [a, b] = swapTimes({ startMin: 1200, endMin: 1380 }, { startMin: 1380, endMin: 1440 });
+    expect(a).toEqual({ startMin: 1380, endMin: 1440 });
+    expect(b).toEqual({ startMin: 1200, endMin: 1260 });
+  });
+  it('keeps the 30 minute grid and a minimum of 30 minutes', () => {
+    const [a] = swapTimes({ startMin: 600, endMin: 610 }, { startMin: 660, endMin: 720 });
+    expect(a).toEqual({ startMin: 660, endMin: 690 });
   });
 });
 
