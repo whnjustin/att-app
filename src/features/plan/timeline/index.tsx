@@ -6,10 +6,12 @@ import { navigate } from '../../../lib/router';
 import { formatDay, formatMin, formatRange, todayTripDay } from '../../../lib/time';
 import { legIndexByItem } from '../../../lib/geo';
 import { Badge, IconButton, SegmentedControl } from '../../../ui';
-import { AddPlaceSheet } from '../places';
+import { AddPlaceSheet, openPlace } from '../places';
 import {
   PX_PER_HOUR,
   PX_PER_MIN,
+  DAY_START,
+  minToPx,
   firstFreeHour,
   keyboardSpan,
   moveSpan,
@@ -23,12 +25,14 @@ import { ItemSheet, type SheetTarget } from './ItemSheet';
 import './timeline.css';
 
 const TOP_PAD = 10;
+const DOUBLE_TAP_MS = 280;
 const GRID_H = PX_PER_HOUR * 24 + TOP_PAD * 2;
+const FIRST_HOUR = DAY_START / 60;
 const EDGE = 48;
 const LONG_PRESS_MS = 250;
 const KEY_DEBOUNCE_MS = 400;
 const DEFAULT_DAY: DateKey = '2026-11-19';
-const HOURS = Array.from({ length: 24 }, (_, h) => h);
+const HOURS = Array.from({ length: 24 }, (_, h) => h + FIRST_HOUR);
 
 type Mode = 'move' | 'start' | 'end';
 /** Local hold on one item while this user edits it. Remote changes to it are ignored until it settles. */
@@ -99,7 +103,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
   });
 
   useLayoutEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 9 * PX_PER_HOUR;
+    if (scrollRef.current) scrollRef.current.scrollTop = (9 - FIRST_HOUR) * PX_PER_HOUR;
   }, []);
 
   // Reset local state on day change.
@@ -147,7 +151,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
         return;
       }
       setHold({ id, ...span, phase: 'commit' });
-      void store.updateItem(id, { startMin: span.startMin, endMin: span.endMin });
+      void store.updateItem(id, { date: orig.date, startMin: span.startMin, endMin: span.endMin });
     },
     [store],
   );
@@ -313,6 +317,35 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
     [],
   );
 
+  // ---- tap: a linked item opens its place in the list, double tap edits ----
+
+  const tapTimer = useRef<{ id: string; t: number } | null>(null);
+  useEffect(
+    () => () => {
+      if (tapTimer.current) window.clearTimeout(tapTimer.current.t);
+    },
+    [],
+  );
+  const onItemTap = (item: ItineraryItem) => {
+    if (suppressClick.current) return;
+    setSelected(item.id);
+    const pending = tapTimer.current;
+    if (pending) window.clearTimeout(pending.t);
+    tapTimer.current = null;
+    if (!item.poiId || (pending && pending.id === item.id)) {
+      setSheet({ mode: 'edit', itemId: item.id });
+      return;
+    }
+    const poiId = item.poiId;
+    tapTimer.current = {
+      id: item.id,
+      t: window.setTimeout(() => {
+        tapTimer.current = null;
+        openPlace(poiId);
+      }, DOUBLE_TAP_MS),
+    };
+  };
+
   // ---- keyboard ----
 
   const onKey = (e: KeyboardEvent, item: ItineraryItem) => {
@@ -342,7 +375,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
     if (!grid) return;
     setSelected(null);
     const y = e.clientY - grid.getBoundingClientRect().top - TOP_PAD;
-    const slot = slotAt(Math.floor(y / PX_PER_MIN / 30) * 30);
+    const slot = slotAt(DAY_START + Math.floor(y / PX_PER_MIN / 30) * 30);
     setSheet({ mode: 'add', date: day, ...slot });
   };
 
@@ -369,7 +402,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
       <div className="tl-scroll" ref={scrollRef}>
         <div className="tl-grid" ref={gridRef} style={{ height: GRID_H }} onClick={onGridClick}>
           {HOURS.map((h) => (
-            <div key={h} className="tl-hour" style={{ top: TOP_PAD + h * PX_PER_HOUR }}>
+            <div key={h} className="tl-hour" style={{ top: TOP_PAD + (h - FIRST_HOUR) * PX_PER_HOUR }}>
               <span className="tl-label">{formatMin(h * 60)}</span>
               <span className="tl-line" />
               <span className="tl-half" />
@@ -404,18 +437,14 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
                   className={cls}
                   data-id={item.id}
                   style={{
-                    top: TOP_PAD + item.startMin * PX_PER_MIN,
+                    top: TOP_PAD + minToPx(item.startMin),
                     height: (item.endMin - item.startMin) * PX_PER_MIN,
                     left: `${(place.col / place.cols) * 100}%`,
                     width: `${100 / place.cols}%`,
                     ['--cat' as string]: poi ? `var(${CAT_VAR[poi.category]})` : 'var(--label-3)',
                   }}
                   onPointerDown={(e) => startGesture(e, item, 'move')}
-                  onClick={() => {
-                    if (suppressClick.current) return;
-                    setSelected(item.id);
-                    setSheet({ mode: 'edit', itemId: item.id });
-                  }}
+                  onClick={() => onItemTap(item)}
                   onKeyDown={(e) => onKey(e, item)}
                   onFocus={() => setSelected(item.id)}
                   onContextMenu={(e) => e.preventDefault()}

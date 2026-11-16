@@ -1,8 +1,11 @@
+import { DAY_END_MIN, DAY_START_MIN } from '../../../contracts/types';
 import { clamp, snap30 } from '../../../lib/time';
 
 export const PX_PER_HOUR = 56;
 export const PX_PER_MIN = PX_PER_HOUR / 60;
-export const DAY_MIN = 1440;
+/** The grid runs 5 AM to 5 AM next morning. */
+export const DAY_START = DAY_START_MIN;
+export const DAY_END = DAY_END_MIN;
 export const STEP = 30;
 
 export interface Span {
@@ -10,31 +13,31 @@ export interface Span {
   endMin: number;
 }
 
-/** Pixels from the top of the hour area to minutes, snapped to 30 and clamped to the day. */
+/** Pixels from the top of the hour area (5 AM) to minutes, snapped to 30 and clamped to the day. */
 export function pxToMin(px: number): number {
-  return clamp(snap30(px / PX_PER_MIN), 0, DAY_MIN);
+  return clamp(snap30(px / PX_PER_MIN) + DAY_START, DAY_START, DAY_END);
 }
 
 export function minToPx(min: number): number {
-  return min * PX_PER_MIN;
+  return (min - DAY_START) * PX_PER_MIN;
 }
 
 /** Move a span by a minute delta, keeping its length and the 30 minute grid. */
 export function moveSpan(s: Span, deltaMin: number): Span {
   const len = s.endMin - s.startMin;
-  const start = clamp(snap30(s.startMin + deltaMin), 0, DAY_MIN - len);
+  const start = clamp(snap30(s.startMin + deltaMin), DAY_START, DAY_END - len);
   return { startMin: start, endMin: start + len };
 }
 
 /** Move the end edge. Minimum 30 minutes, clamped to the day. */
 export function resizeEnd(s: Span, deltaMin: number): Span {
-  const end = clamp(snap30(s.endMin + deltaMin), s.startMin + STEP, DAY_MIN);
+  const end = clamp(snap30(s.endMin + deltaMin), s.startMin + STEP, DAY_END);
   return { startMin: s.startMin, endMin: end };
 }
 
 /** Move the start edge. Minimum 30 minutes, clamped to the day. */
 export function resizeStart(s: Span, deltaMin: number): Span {
-  const start = clamp(snap30(s.startMin + deltaMin), 0, s.endMin - STEP);
+  const start = clamp(snap30(s.startMin + deltaMin), DAY_START, s.endMin - STEP);
   return { startMin: start, endMin: s.endMin };
 }
 
@@ -76,7 +79,7 @@ export function packColumns<T extends Span & { id: string }>(items: T[]): Record
 
 /** Start of the first free hour from 10 AM, or 10 AM when the day is full. */
 export function firstFreeHour(items: Span[]): number {
-  for (let t = 600; t + 60 <= DAY_MIN; t += 60) {
+  for (let t = 600; t + 60 <= DAY_END; t += 60) {
     if (!items.some((i) => i.startMin < t + 60 && i.endMin > t)) return t;
   }
   return 600;
@@ -84,7 +87,7 @@ export function firstFreeHour(items: Span[]): number {
 
 /** One hour slot starting at a half hour, kept inside the day. */
 export function slotAt(startMin: number): Span {
-  const start = clamp(snap30(startMin), 0, DAY_MIN - 60);
+  const start = clamp(snap30(startMin), DAY_START, DAY_END - 60);
   return { startMin: start, endMin: start + 60 };
 }
 

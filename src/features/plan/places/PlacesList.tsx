@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useItems, usePois, useStore } from '../../../contracts/store';
-import { TRIP_DAYS, type Poi, type PoiCategory } from '../../../contracts/types';
+import { DAY_END_MIN, DAY_START_MIN, TRIP_DAYS, type Poi, type PoiCategory } from '../../../contracts/types';
 import { googleEmbedUrl, googleMapsUrl, MapCanvas, wazeUrl } from '../../../lib/geo';
 import {
   Button,
@@ -163,7 +163,7 @@ function AddToDaySheet({ poi, onClose }: { poi: Poi | null; onClose: () => void 
       meal: null,
       poiId: poi.id,
       startMin: start,
-      endMin: Math.min(1440, start + 60),
+      endMin: Math.min(DAY_END_MIN, start + 60),
     });
     onClose();
   };
@@ -176,13 +176,27 @@ function AddToDaySheet({ poi, onClose }: { poi: Poi | null; onClose: () => void 
           value={date}
           onChange={(d) => setDate(d && (TRIP_DAYS as string[]).includes(d) ? d : null)}
         />
-        <TimeField label="Start" value={start} onChange={setStart} />
+        <TimeField
+          label="Start"
+          value={start}
+          min={DAY_START_MIN}
+          max={DAY_END_MIN - 60}
+          onChange={setStart}
+        />
         <Button onClick={() => void save()} disabled={!day}>
           Save
         </Button>
       </div>
     </Sheet>
   );
+}
+
+const OPEN_PLACE_EVENT = 'att:open-place';
+const placeRowId = (id: string) => `place-${id}`;
+
+/** Scroll the places list to a place and open its dropdown. */
+export function openPlace(poiId: string): void {
+  window.dispatchEvent(new CustomEvent(OPEN_PLACE_EVENT, { detail: poiId }));
 }
 
 export function PlacesList() {
@@ -193,6 +207,18 @@ export function PlacesList() {
   const [planFor, setPlanFor] = useState<Poi | null>(null);
   const groups = useMemo(() => groupPlaces(pois), [pois]);
   const uses = useMemo(() => usageCounts(items), [items]);
+
+  useEffect(() => {
+    const on = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      setOpenId(id);
+      requestAnimationFrame(() =>
+        document.getElementById(placeRowId(id))?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      );
+    };
+    window.addEventListener(OPEN_PLACE_EVENT, on);
+    return () => window.removeEventListener(OPEN_PLACE_EVENT, on);
+  }, []);
 
   return (
     <section aria-labelledby="places-title" className="places">
@@ -213,6 +239,7 @@ export function PlacesList() {
               return (
                 <ListRow
                   key={p.id}
+                  id={placeRowId(p.id)}
                   leading={categoryIcon(p.category)}
                   title={p.name}
                   subtitle={displayAddress(p.address)}

@@ -42,6 +42,8 @@ export interface ListRowProps {
   /** When defined the row is expandable and reports aria-expanded. */
   expanded?: boolean;
   expandedContent?: ReactNode;
+  /** DOM id on the row, for scrolling to it. */
+  id?: string;
 }
 
 const CLOSE_FALLBACK_MS = 450;
@@ -96,6 +98,7 @@ export function ListRow({
   onClick,
   expanded,
   expandedContent,
+  id,
 }: ListRowProps) {
   const interactive = !!onClick;
   const expand = useExpand(!!expanded && !!expandedContent);
@@ -120,7 +123,7 @@ export function ListRow({
     <div className="row-main">{body}</div>
   );
   return (
-    <li className="list-row">
+    <li className="list-row" id={id}>
       {action ? (
         <div className="row-line">
           {main}

@@ -1,5 +1,5 @@
 import type { DateKey } from '../contracts/types';
-import { TRIP_DAYS } from '../contracts/types';
+import { DAY_END_MIN, DAY_START_MIN, TRIP_DAYS } from '../contracts/types';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DOW_LONG = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -104,10 +104,42 @@ export function nowMyt(nowMs = Date.now()): { date: string; min: number } {
   return { date, min: t.getUTCHours() * 60 + t.getUTCMinutes() };
 }
 
-/** Today's trip day in Malaysia time, or null outside the window. */
+/** Shift a 'YYYY-MM-DD' by whole days. */
+export function addDays(date: string, n: number): string {
+  const p = parts(date);
+  const t = new Date(Date.UTC(p.y, p.mo - 1, p.d + n));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** Malaysia time on the trip clock: before 5 AM still belongs to the previous day, as minutes past 1440. */
+export function tripNow(nowMs = Date.now()): { date: string; min: number } {
+  const n = nowMyt(nowMs);
+  return n.min < DAY_START_MIN ? { date: addDays(n.date, -1), min: n.min + 1440 } : n;
+}
+
+/** Today's trip day in Malaysia time (days turn over at 5 AM), or null outside the window. */
 export function todayTripDay(nowMs = Date.now()): DateKey | null {
-  const { date } = nowMyt(nowMs);
+  const { date } = tripNow(nowMs);
   return isTripDay(date) ? date : null;
+}
+
+/**
+ * Items saved before days ran 5 AM to 5 AM may sit on the next date before 5 AM. Show them on the
+ * day they belong to, after midnight. The first trip day keeps early items, clamped to 5 AM.
+ */
+export function toTripDayItem<T extends { date: DateKey; startMin: number; endMin: number }>(item: T): T {
+  if (item.startMin >= DAY_START_MIN) return item;
+  const prev = addDays(item.date, -1);
+  if (isTripDay(prev)) {
+    return {
+      ...item,
+      date: prev,
+      startMin: item.startMin + 1440,
+      endMin: Math.min(DAY_END_MIN, item.endMin + 1440),
+    };
+  }
+  const len = Math.max(30, item.endMin - item.startMin);
+  return { ...item, startMin: DAY_START_MIN, endMin: DAY_START_MIN + len };
 }
 
 /** Whole days between two 'YYYY-MM-DD' strings (b minus a). */

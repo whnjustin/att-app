@@ -13,7 +13,7 @@ service cloud.firestore {
         && d.startMin % 30 == 0 && d.endMin % 30 == 0
         && d.startMin >= 0
         && d.startMin + 30 <= d.endMin
-        && d.endMin <= 1440;
+        && d.endMin <= 1740;
     }
 
     function validPoi(d) {

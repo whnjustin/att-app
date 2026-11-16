@@ -1,10 +1,11 @@
+import { DAY_END_MIN } from '../../../contracts/types';
 import type { DateKey, Poi } from '../../../contracts/types';
 import { TRIP_DAYS } from '../../../contracts/types';
 import type { Leg, Stop } from '../../../lib/geo';
 import { stopColorVar } from '../../../lib/geo/legs';
 import { snap30 } from '../../../lib/time';
 
-const DAY_MIN = 1440;
+const DAY_MIN = DAY_END_MIN;
 
 export type LngLat = [number, number];
 

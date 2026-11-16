@@ -119,7 +119,7 @@ export function StopList({ stops, itemById, display }: Props) {
       found.forEach((it, i) => {
         if (it.startMin !== next[i].startMin || it.endMin !== next[i].endMin) {
           expect.set(it.id, next[i]);
-          void store.updateItem(it.id, next[i]);
+          void store.updateItem(it.id, { ...next[i], date: it.date });
         }
       });
       return expect;

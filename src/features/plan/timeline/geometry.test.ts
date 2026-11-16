@@ -14,12 +14,12 @@ const span = (id: string, startMin: number, endMin: number) => ({ id, startMin, 
 
 describe('pxToMin', () => {
   it('snaps to 30 and clamps to the day', () => {
-    expect(pxToMin(0)).toBe(0);
-    expect(pxToMin(56)).toBe(60);
-    expect(pxToMin(56 * 9)).toBe(540);
-    expect(pxToMin(14)).toBe(30);
-    expect(pxToMin(-100)).toBe(0);
-    expect(pxToMin(99999)).toBe(1440);
+    expect(pxToMin(0)).toBe(300);
+    expect(pxToMin(56)).toBe(360);
+    expect(pxToMin(56 * 9)).toBe(840);
+    expect(pxToMin(14)).toBe(330);
+    expect(pxToMin(-100)).toBe(300);
+    expect(pxToMin(99999)).toBe(1740);
   });
 });
 
@@ -28,14 +28,14 @@ describe('moveSpan and resize', () => {
     expect(moveSpan({ startMin: 720, endMin: 780 }, 61)).toEqual({ startMin: 780, endMin: 840 });
   });
   it('clamps moves to the day', () => {
-    expect(moveSpan({ startMin: 60, endMin: 120 }, -500)).toEqual({ startMin: 0, endMin: 60 });
-    expect(moveSpan({ startMin: 1380, endMin: 1440 }, 500)).toEqual({ startMin: 1380, endMin: 1440 });
+    expect(moveSpan({ startMin: 360, endMin: 420 }, -500)).toEqual({ startMin: 300, endMin: 360 });
+    expect(moveSpan({ startMin: 1380, endMin: 1440 }, 500)).toEqual({ startMin: 1680, endMin: 1740 });
   });
   it('resizes with a 30 minute minimum', () => {
     expect(resizeEnd({ startMin: 600, endMin: 660 }, -120)).toEqual({ startMin: 600, endMin: 630 });
-    expect(resizeEnd({ startMin: 600, endMin: 660 }, 5000)).toEqual({ startMin: 600, endMin: 1440 });
+    expect(resizeEnd({ startMin: 600, endMin: 660 }, 5000)).toEqual({ startMin: 600, endMin: 1740 });
     expect(resizeStart({ startMin: 600, endMin: 660 }, 120)).toEqual({ startMin: 630, endMin: 660 });
-    expect(resizeStart({ startMin: 600, endMin: 660 }, -5000)).toEqual({ startMin: 0, endMin: 660 });
+    expect(resizeStart({ startMin: 600, endMin: 660 }, -5000)).toEqual({ startMin: 300, endMin: 660 });
   });
 });
 
@@ -75,14 +75,15 @@ describe('firstFreeHour', () => {
     expect(firstFreeHour([span('a', 600, 660), span('b', 660, 690)])).toBe(720);
   });
   it('falls back to 10 AM when full', () => {
-    expect(firstFreeHour([span('a', 0, 1440)])).toBe(600);
+    expect(firstFreeHour([span('a', 300, 1740)])).toBe(600);
   });
 });
 
 describe('slotAt and keyboardSpan', () => {
   it('makes one hour slots inside the day', () => {
     expect(slotAt(750)).toEqual({ startMin: 750, endMin: 810 });
-    expect(slotAt(1410)).toEqual({ startMin: 1380, endMin: 1440 });
+    expect(slotAt(1410)).toEqual({ startMin: 1410, endMin: 1470 });
+    expect(slotAt(1720)).toEqual({ startMin: 1680, endMin: 1740 });
   });
   it('moves with arrows and resizes with shift', () => {
     const s = { startMin: 600, endMin: 660 };

@@ -1,6 +1,7 @@
 // In memory Store for development and tests (?mock=1).
 // State is mirrored to localStorage so a second tab sees edits live (storage event), like Firestore.
 
+import { toTripDayItem } from './time';
 import type { Store, Unsub } from '../contracts/store';
 import type {
   Background,
@@ -175,7 +176,10 @@ export function createMockStore(opts: MockStoreOptions = {}): Store {
     watchPeople: (cb) => watch((s) => s.people, cb),
     watchPois: (cb) => watch((s) => s.pois, cb),
     watchItems: (date: DateKey | 'all', cb) =>
-      watch((s) => (date === 'all' ? s.items : s.items.filter((i) => i.date === date)), cb),
+      watch((s) => {
+        const all = s.items.map(toTripDayItem);
+        return date === 'all' ? all : all.filter((i) => i.date === date);
+      }, cb),
     watchDays: (cb) => watch((s) => s.days, cb),
     watchPresence: (cb) => watch((s) => s.presence, cb),
 
