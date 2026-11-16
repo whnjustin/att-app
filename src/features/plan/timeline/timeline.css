@@ -1,0 +1,248 @@
+.tl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-width: 0;
+}
+
+.tl-scroll {
+  position: relative;
+  height: min(70dvh, 900px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border-radius: var(--r-card);
+  box-shadow: inset 0 0 0 0.5px var(--separator);
+}
+
+.tl-grid {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.tl-hour {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  pointer-events: none;
+}
+.tl-label {
+  position: absolute;
+  left: 0;
+  width: 52px;
+  top: -8px;
+  padding-right: var(--s2);
+  text-align: right;
+  font: var(--t-caption);
+  color: var(--label-2);
+  white-space: nowrap;
+}
+.tl-line,
+.tl-half {
+  position: absolute;
+  left: 56px;
+  right: 0;
+  height: 0;
+}
+.tl-line {
+  top: 0;
+  border-top: 0.5px solid var(--separator);
+}
+.tl-half {
+  top: 28px;
+  border-top: 0.5px solid var(--separator);
+  opacity: 0.5;
+}
+.tl-end {
+  position: absolute;
+  left: 56px;
+  right: 0;
+  border-top: 0.5px solid var(--separator);
+}
+
+.tl-lane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 60px;
+  right: var(--s2);
+}
+
+.tl-block {
+  position: absolute;
+  padding: 1px 0;
+  touch-action: pan-y;
+  cursor: grab;
+  outline: none;
+  transition:
+    top var(--dur) var(--spring),
+    height var(--dur) var(--spring),
+    left var(--dur) var(--spring),
+    width var(--dur) var(--spring),
+    transform var(--dur-fast) var(--spring),
+    box-shadow var(--dur-fast) var(--spring);
+}
+.tl-block.dragging {
+  transition:
+    transform var(--dur-fast) var(--spring),
+    box-shadow var(--dur-fast) var(--spring);
+  transform: scale(1.025);
+  z-index: 5;
+  cursor: grabbing;
+}
+.tl-block.selected {
+  z-index: 3;
+}
+.tl-block:hover {
+  z-index: 2;
+}
+
+.tl-inner {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s2);
+  height: 100%;
+  overflow: hidden;
+  padding: 4px 6px 4px 8px;
+  border-radius: var(--r-control);
+  color: var(--label);
+  box-sizing: border-box;
+}
+.tl-block.linked .tl-inner {
+  background: color-mix(in srgb, var(--cat) 20%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--cat);
+}
+.tl-block.unlinked .tl-inner {
+  background: var(--surface-2);
+  border: 1.5px dashed var(--label-3);
+  padding: 2.5px 4.5px 2.5px 6.5px;
+  color: var(--label-2);
+}
+.tl-block.dragging .tl-inner {
+  box-shadow:
+    inset 3px 0 0 var(--cat),
+    0 8px 24px rgba(0, 0, 0, 0.22);
+}
+.tl-block:focus-visible .tl-inner,
+.tl-block.selected .tl-inner {
+  outline: 2px solid var(--tint);
+  outline-offset: -2px;
+}
+.tl-block.selected:not(:focus-visible) .tl-inner {
+  outline-width: 1.5px;
+  outline-color: color-mix(in srgb, var(--tint) 60%, transparent);
+}
+
+.tl-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.tl-name {
+  font: var(--t-footnote);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-range {
+  font: var(--t-caption);
+  color: var(--label-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-block.compact .tl-inner {
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.tl-block.compact .tl-text {
+  flex-direction: row;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.tl-block.compact .tl-range {
+  flex: none;
+}
+
+/* Resize handles: 44px hit area, mostly outside the block. */
+.tl-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--hit);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  touch-action: pan-y;
+  cursor: ns-resize;
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+}
+.tl-handle::after {
+  content: '';
+  width: 28px;
+  height: 4px;
+  border-radius: var(--r-capsule);
+  background: var(--tint);
+  align-self: center;
+}
+.tl-handle.top {
+  top: -32px;
+}
+.tl-handle.top::after {
+  margin-top: 36px;
+}
+.tl-handle.bottom {
+  bottom: -32px;
+}
+.tl-handle.bottom::after {
+  margin-bottom: 36px;
+}
+.tl-block.selected .tl-handle,
+.tl-block:hover .tl-handle {
+  pointer-events: auto;
+  opacity: 1;
+}
+@media (hover: none) {
+  .tl-block:not(.selected) .tl-handle {
+    pointer-events: none;
+    opacity: 0;
+  }
+}
+.tl-block.dragging .tl-handle {
+  opacity: 0;
+}
+
+/* Floating add button, aligned to the content column. */
+.tl-fab {
+  position: fixed;
+  z-index: 20;
+  bottom: calc(var(--s4) + env(safe-area-inset-bottom));
+  right: max(var(--gutter), calc((100vw - var(--content-max)) / 2 + var(--gutter)));
+  width: 56px;
+  height: 56px;
+}
+
+.tl-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+.tl-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s3);
+}
+.tl-empty {
+  font: var(--t-subhead);
+  color: var(--label-2);
+}
