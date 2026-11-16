@@ -63,9 +63,11 @@ interface Props {
   stops: Stop[];
   itemById: Map<string, ItineraryItem>;
   display: DisplayLeg[];
+  /** Tap on a stop (not a drag): show its card on the map. */
+  onSelect?: (stop: Stop) => void;
 }
 
-export function StopList({ stops, itemById, display }: Props) {
+export function StopList({ stops, itemById, display, onSelect }: Props) {
   const store = useStore();
   const [drag, setDrag] = useState<Drag | null>(null);
   const [grabbed, setGrabbed] = useState<string | null>(null);
@@ -392,7 +394,11 @@ export function StopList({ stops, itemById, display }: Props) {
                 onKeyDown={(e) => onKey(e, i)}
                 onBlur={() => setGrabbed((g) => (g === st.itemId ? null : g))}
                 onClick={(e) => {
-                  if (suppress.current) e.preventDefault();
+                  if (suppress.current) {
+                    e.preventDefault();
+                    return;
+                  }
+                  onSelect?.(st);
                 }}
               >
                 <span className="row-leading">

@@ -10,6 +10,7 @@ import {
   stopsFor,
   wazeUrl,
   type ResolvedLeg,
+  type Stop,
 } from '../../../lib/geo';
 import { formatDay, todayTripDay } from '../../../lib/time';
 import { Glass, Icon, IconButton, SegmentedControl } from '../../../ui';
@@ -235,6 +236,19 @@ export function DayMap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day, stopsSig, epoch]);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+  const selectStop = (st: Stop) => {
+    const m = models.find((x) => x.kind !== 'house' && x.poi.id === st.poi.id);
+    if (!m) return;
+    setSelected(m);
+    moved.current = true;
+    mapRef.current?.easeTo({ center: [m.poi.lng, m.poi.lat], animate: !reducedMotion() });
+    const card = cardRef.current;
+    if (card && card.getBoundingClientRect().top < 0) {
+      card.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <section aria-labelledby="routes-title">
       <h2 id="routes-title" className="section-title">
@@ -247,7 +261,7 @@ export function DayMap() {
         value={day}
         onChange={setDay}
       />
-      <div className="map-card">
+      <div className="map-card" ref={cardRef}>
         <MapCanvas className="map-canvas" onReady={onReady} onStyleReload={bump} />
         {selected ? (
           <Glass variant="strong" className="map-popover" role="dialog" aria-label={selected.poi.name}>
@@ -282,7 +296,7 @@ export function DayMap() {
         <div className="map-empty">No stops</div>
       ) : (
         <div className="leg-list">
-          <StopList stops={stops} itemById={itemById} display={display} />
+          <StopList stops={stops} itemById={itemById} display={display} onSelect={selectStop} />
         </div>
       )}
     </section>
