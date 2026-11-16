@@ -1,10 +1,9 @@
-import { useState, type ReactNode } from 'react';
-import { AvatarStack, IconButton, TopBar } from '../../ui';
-import { usePeople, usePresence } from '../../contracts/store';
+import type { ReactNode } from 'react';
+import { useMyBackground } from '../../contracts/store';
 import type { Route } from '../../lib/router';
-import { onlinePeople } from './online';
 import { usePresenceHeartbeat } from '../../lib/presence';
-import { ShellSidebar } from './ShellSidebar';
+import { NavButton } from './NavButton';
+import { ProfileButton } from './Accounts';
 import './shell.css';
 
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
@@ -13,32 +12,24 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
 }
 
 function ShellFrame({ page, children }: { page: 'overview' | 'plan'; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
   usePresenceHeartbeat(page);
-  const online = onlinePeople(usePresence(), usePeople());
-  const title = page === 'plan' ? 'Day plan' : 'ATT in KL';
+  const bg = useMyBackground();
 
   return (
     <>
-      <TopBar
-        title={title}
-        leading={<IconButton icon="sidebar" aria-label="Open menu" onClick={() => setOpen(true)} />}
-        trailing={
-          online.length ? (
-            <AvatarStack
-              people={online.map((p) => ({
-                initials: p.initials,
-                colorToken: p.colorToken,
-                label: `${p.name} online`,
-              }))}
-            />
-          ) : null
-        }
-      />
+      {bg ? (
+        <div className="shell-bg" aria-hidden="true" style={{ backgroundImage: `url("${bg.dataUrl}")` }}>
+          <div className="shell-bg-veil" />
+        </div>
+      ) : null}
+      <ProfileButton />
       <div className="shell-page" key={page}>
+        <h1 className={page === 'plan' ? 'shell-title shell-title-plan' : 'shell-title shell-title-home'}>
+          {page === 'plan' ? 'Day plan' : 'ATT in KL'}
+        </h1>
         {children}
       </div>
-      <ShellSidebar open={open} page={page} onClose={() => setOpen(false)} />
+      <NavButton page={page} />
     </>
   );
 }

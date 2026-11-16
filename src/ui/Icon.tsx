@@ -14,7 +14,11 @@ export type IconName =
   | 'fork-knife'
   | 'cup'
   | 'glass'
-  | 'star';
+  | 'star'
+  | 'person'
+  | 'layers'
+  | 'upload'
+  | 'check';
 
 export const ICON_NAMES: IconName[] = [
   'sidebar',
@@ -33,6 +37,10 @@ export const ICON_NAMES: IconName[] = [
   'cup',
   'glass',
   'star',
+  'person',
+  'layers',
+  'upload',
+  'check',
 ];
 
 const PATHS: Record<IconName, string[]> = {
@@ -59,6 +67,10 @@ const PATHS: Record<IconName, string[]> = {
   'fork-knife': ['M6 3v5a3 3 0 0 0 6 0V3', 'M9 11v10', 'M17 21V3c-2.2 1.5-3 4-3 7h3'],
   cup: ['M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z', 'M16 11h1.5a2.5 2.5 0 0 1 0 5H16', 'M8 3v2', 'M12 3v2'],
   glass: ['M4 5h16l-8 9z', 'M12 14v6', 'M8 20h8'],
+  person: ['M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8z', 'M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5'],
+  layers: ['M12 4l9 5-9 5-9-5z', 'M3 14l9 5 9-5'],
+  upload: ['M12 16V5', 'M7.5 9.5L12 5l4.5 4.5', 'M5 19h14'],
+  check: ['M5 12.5l4.5 4.5L19 7.5'],
   star: ['M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.1 5.9-.8z'],
 };
 
