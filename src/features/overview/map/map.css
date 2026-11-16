@@ -1,0 +1,137 @@
+.daymap-switch {
+  margin-bottom: var(--s3);
+}
+
+.map-card {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+  contain: layout paint;
+}
+@media (min-width: 768px) {
+  .map-card {
+    aspect-ratio: 16 / 9;
+  }
+}
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.stop-marker {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.stop-dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--stop-color, var(--tint));
+  color: #fff;
+  font: var(--t-caption);
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: transform var(--dur-fast) var(--spring);
+}
+.stop-dot.dark-text {
+  color: #000;
+}
+.stop-dot.house {
+  background: var(--surface);
+  color: var(--label);
+}
+.stop-marker:active .stop-dot {
+  transform: scale(1.15);
+}
+.stop-marker:focus-visible {
+  outline: none;
+}
+.stop-marker:focus-visible .stop-dot {
+  outline: 2px solid var(--tint);
+  outline-offset: 2px;
+}
+
+.map-popover {
+  position: absolute;
+  left: var(--s3);
+  right: var(--s3);
+  bottom: calc(var(--s3) + 20px);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-width: 360px;
+  margin: 0 auto;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-card);
+}
+.map-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+}
+.map-popover-name {
+  font: var(--t-headline);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-popover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.map-popover-actions .btn {
+  text-decoration: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .map-popover {
+    animation: map-pop var(--dur-fast) var(--spring);
+  }
+}
+@keyframes map-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.leg-list {
+  margin-top: var(--s4);
+}
+.leg-trailing {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 56px;
+  font: var(--t-subhead);
+  font-variant-numeric: tabular-nums;
+}
+.leg-trailing span + span {
+  color: var(--label-2);
+  font: var(--t-footnote);
+}
+.map-empty {
+  margin-top: var(--s4);
+  padding: var(--s4);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  color: var(--label-2);
+  font: var(--t-body);
+  text-align: center;
+}
