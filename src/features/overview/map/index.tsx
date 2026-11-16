@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import { TRIP_DAYS, type DateKey } from '../../../contracts/types';
-import { useDays, useItems, usePois, useStore } from '../../../contracts/store';
+import { useItems, usePois, useStore } from '../../../contracts/store';
 import {
   MapCanvas,
   buildLegs,
@@ -11,7 +11,8 @@ import {
   wazeUrl,
   type ResolvedLeg,
 } from '../../../lib/geo';
-import { formatDay, todayTripDay } from '../../../lib/time';
+import { stopColorVar } from '../../../lib/geo/legs';
+import { formatDay, formatRange, todayTripDay } from '../../../lib/time';
 import { Badge, Glass, Icon, IconButton, ListGroup, ListRow, SegmentedControl } from '../../../ui';
 import { formatDistance, formatDuration } from './format';
 import {
@@ -20,6 +21,7 @@ import {
   displayLegs,
   lineCollection,
   markerModels,
+  swapTimes,
   type LngLat,
   type MarkerModel,
 } from './model';
@@ -74,13 +76,24 @@ function ensureLayers(map: maplibregl.Map) {
 export function DayMap() {
   const store = useStore();
   const pois = usePois();
-  const days = useDays();
   const [day, setDay] = useState<DateKey>(() => defaultDay(todayTripDay()));
   const items = useItems(day);
 
-  const dayConfig = days.find((d) => d.date === day);
-  const stops = useMemo(() => (dayConfig ? stopsFor(items, pois, dayConfig) : []), [items, pois, dayConfig]);
-  const legs = useMemo(() => (dayConfig ? buildLegs(items, pois, dayConfig) : []), [items, pois, dayConfig]);
+  const stops = useMemo(() => stopsFor(items, pois), [items, pois]);
+  const legs = useMemo(() => buildLegs(items, pois), [items, pois]);
+  const residences = useMemo(() => pois.filter((p) => p.category === 'stay'), [pois]);
+
+  const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
+  const move = useCallback(
+    async (i: number, dir: -1 | 1) => {
+      const a = itemById.get(stops[i]?.itemId ?? '');
+      const b = itemById.get(stops[i + dir]?.itemId ?? '');
+      if (!a || !b) return;
+      const [na, nb] = swapTimes(a, b);
+      await Promise.all([store.updateItem(a.id, na), store.updateItem(b.id, nb)]);
+    },
+    [itemById, stops, store],
+  );
 
   const [resolved, setResolved] = useState<ResolvedLeg[]>([]);
   const display = useMemo(() => displayLegs(legs, resolved), [legs, resolved]);
@@ -144,7 +157,7 @@ export function DayMap() {
 
   // Markers.
   const [selected, setSelected] = useState<MarkerModel | null>(null);
-  const models = useMemo(() => markerModels(stops, legs), [stops, legs]);
+  const models = useMemo(() => markerModels(stops, residences), [stops, residences]);
   useEffect(() => {
     const map = mapRef.current;
     if (!map || epoch === 0) return;
@@ -156,6 +169,7 @@ export function DayMap() {
       const dot = document.createElement('span');
       dot.className = 'stop-dot';
       if (m.kind === 'house') {
+        el.classList.add('house-marker');
         dot.classList.add('house');
         dot.innerHTML = HOUSE_SVG;
       } else {
@@ -211,7 +225,8 @@ export function DayMap() {
       map.off('zoomstart', mark);
     };
   }, [epoch]);
-  const stopsSig = stops.map((s) => `${s.poi.id}@${s.poi.lat},${s.poi.lng}`).join('|');
+  const fitPois = useMemo(() => (stops.length ? stops.map((s) => s.poi) : residences), [stops, residences]);
+  const stopsSig = fitPois.map((p) => `${p.id}@${p.lat},${p.lng}`).join('|');
   useEffect(() => {
     const map = mapRef.current;
     if (!map || epoch === 0) return;
@@ -219,16 +234,16 @@ export function DayMap() {
     if (!dayChanged && (moved.current || fitted.current.sig === stopsSig)) return;
     if (dayChanged) moved.current = false;
     fitted.current = { day, sig: stopsSig };
-    if (!stops.length) return;
+    if (!fitPois.length) return;
     const animate = !reducedMotion();
-    const points: LngLat[] = stops.map((s) => [s.poi.lng, s.poi.lat]);
+    const points: LngLat[] = fitPois.map((p) => [p.lng, p.lat]);
     if (points.length === 1) {
       map.easeTo({ center: points[0], zoom: 14, animate });
       return;
     }
     const b = boundsOf(points);
     if (b) map.fitBounds(b, { padding: 56, maxZoom: 16, animate });
-    // stops is covered by stopsSig
+    // fitPois is covered by stopsSig
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day, stopsSig, epoch]);
 
@@ -275,27 +290,56 @@ export function DayMap() {
           </Glass>
         ) : null}
       </div>
-      {legs.length === 0 ? (
+      {stops.length === 0 ? (
         <div className="map-empty">No stops</div>
       ) : (
         <div className="leg-list">
           <ListGroup>
-            {display.map((d) => (
-              <ListRow
-                key={`${d.leg.index}:${d.leg.key}`}
-                leading={<Badge n={d.leg.index + 1} colorVar={d.leg.colorVar} />}
-                title={d.leg.from.name}
-                subtitle={d.leg.to.name}
-                trailing={
-                  d.durationS !== null && d.distanceM !== null ? (
-                    <span className="leg-trailing">
-                      <span>{formatDuration(d.durationS)}</span>
-                      <span>{formatDistance(d.distanceM)}</span>
+            {stops.flatMap((st, i) => {
+              const it = itemById.get(st.itemId);
+              const d = display[i];
+              const rows = [
+                <ListRow
+                  key={`stop:${st.itemId}`}
+                  leading={<Badge n={st.number} colorVar={stopColorVar(st.number)} />}
+                  title={st.poi.name}
+                  subtitle={it ? formatRange(it.startMin, it.endMin) : undefined}
+                  action={
+                    <span className="stop-moves">
+                      <IconButton
+                        icon="chevron"
+                        iconSize={18}
+                        className="move-up"
+                        aria-label={`Move ${st.poi.name} earlier`}
+                        disabled={i === 0}
+                        onClick={() => void move(i, -1)}
+                      />
+                      <IconButton
+                        icon="chevron"
+                        iconSize={18}
+                        className="move-down"
+                        aria-label={`Move ${st.poi.name} later`}
+                        disabled={i === stops.length - 1}
+                        onClick={() => void move(i, 1)}
+                      />
                     </span>
-                  ) : undefined
-                }
-              />
-            ))}
+                  }
+                />,
+              ];
+              if (d) {
+                rows.push(
+                  <li key={`gap:${i}`} className="stop-gap" aria-hidden={d.durationS === null}>
+                    {d.durationS !== null && d.distanceM !== null ? (
+                      <>
+                        <span>{formatDuration(d.durationS)}</span>
+                        <span>{formatDistance(d.distanceM)}</span>
+                      </>
+                    ) : null}
+                  </li>,
+                );
+              }
+              return rows;
+            })}
           </ListGroup>
         </div>
       )}
