@@ -1,21 +1,44 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { AvatarStack, IconButton, TopBar } from '../../ui';
+import { usePeople, usePresence } from '../../contracts/store';
 import type { Route } from '../../lib/router';
+import { onlinePeople } from './online';
+import { useHeartbeat } from './useHeartbeat';
+import { ShellSidebar } from './ShellSidebar';
+import './shell.css';
 
-/** Stub: WP3 replaces this with the glass top bar and sidebar. */
 export function Shell({ route, children }: { route: Route; children: ReactNode }) {
-  const title = route.page === 'plan' ? 'Day plan' : route.page === 'ui' ? 'UI' : 'ATT in KL';
+  if (route.page === 'ui') return <>{children}</>;
+  return <ShellFrame page={route.page}>{children}</ShellFrame>;
+}
+
+function ShellFrame({ page, children }: { page: 'overview' | 'plan'; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  useHeartbeat(page);
+  const online = onlinePeople(usePresence(), usePeople());
+  const title = page === 'plan' ? 'Day plan' : 'ATT in KL';
+
   return (
     <>
-      <header
-        style={{ padding: 'var(--s4) var(--gutter)', maxWidth: 'var(--content-max)', margin: '0 auto' }}
-      >
-        <h1 style={{ font: 'var(--t-large)' }}>{title}</h1>
-        <nav style={{ display: 'flex', gap: 'var(--s4)', marginTop: 'var(--s2)' }}>
-          <a href="#/">Overview</a>
-          <a href="#/plan">Day plan</a>
-        </nav>
-      </header>
-      {children}
+      <TopBar
+        title={title}
+        leading={<IconButton icon="sidebar" aria-label="Open menu" onClick={() => setOpen(true)} />}
+        trailing={
+          online.length ? (
+            <AvatarStack
+              people={online.map((p) => ({
+                initials: p.initials,
+                colorToken: p.colorToken,
+                label: `${p.name} online`,
+              }))}
+            />
+          ) : null
+        }
+      />
+      <div className="shell-page" key={page}>
+        {children}
+      </div>
+      <ShellSidebar open={open} page={page} onClose={() => setOpen(false)} />
     </>
   );
 }
