@@ -1,7 +1,18 @@
 // Frozen contract (docs/PLAN.md B6). Change only through the dispatcher.
 
 import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { DateKey, DayConfig, ItineraryItem, Person, PersonId, Poi, Presence, RouteLeg } from './types';
+import type {
+  Background,
+  DateKey,
+  DayConfig,
+  ItineraryItem,
+  Person,
+  PersonId,
+  Poi,
+  Prefs,
+  Presence,
+  RouteLeg,
+} from './types';
 
 export type Unsub = () => void;
 
@@ -52,6 +63,14 @@ export interface Store {
   // presence
   heartbeat(page: Presence['page']): Promise<void>; // every HEARTBEAT_MS; online = lastSeen within ONLINE_MS
 
+  // backgrounds (shared by everyone) and per person preferences
+  watchBackgrounds(cb: (b: Background[]) => void): Unsub;
+  addBackground(dataUrl: string): Promise<string>;
+  deleteBackground(id: string): Promise<void>;
+  watchPrefs(cb: (p: Prefs[]) => void): Unsub;
+  /** Sets the background for me(); no-op when me() is null. */
+  setMyBackground(backgroundId: string | null): Promise<void>;
+
   // seed
   ensureSeed(): Promise<void>; // idempotent: creates default meals and day configs if missing
 }
@@ -96,6 +115,23 @@ export function useDays(): DayConfig[] {
 
 export function useMe(): PersonId | null {
   return useWatch<PersonId | null>((s, cb) => s.watchMe(cb), []) ?? null;
+}
+
+export function useBackgrounds(): Background[] {
+  return useWatch<Background[]>((s, cb) => s.watchBackgrounds(cb), []) ?? EMPTY;
+}
+
+export function usePrefs(): Prefs[] {
+  return useWatch<Prefs[]>((s, cb) => s.watchPrefs(cb), []) ?? EMPTY;
+}
+
+/** The background chosen by the current person, or null. */
+export function useMyBackground(): Background | null {
+  const me = useMe();
+  const prefs = usePrefs();
+  const backgrounds = useBackgrounds();
+  const id = prefs.find((p) => p.personId === me)?.backgroundId ?? null;
+  return backgrounds.find((b) => b.id === id) ?? null;
 }
 
 /** Presence filtered to entries seen within ONLINE_MS, re-evaluated every 10 s. */

@@ -1,11 +1,13 @@
 import type { Store, Unsub } from '../contracts/store';
 import type {
+  Background,
   DateKey,
   DayConfig,
   ItineraryItem,
   Person,
   PersonId,
   Poi,
+  Prefs,
   Presence,
   RouteLeg,
 } from '../contracts/types';
@@ -193,6 +195,23 @@ export async function createFirestoreStore(): Promise<Store | null> {
       const id = requireUid();
       const p: Presence = { uid: id, personId: me, page, lastSeen: Date.now() };
       await fs.setDoc(fs.doc(db, 'presence', id), p);
+    },
+
+    watchBackgrounds: (cb) => watchCol<Background>(fs.collection(db, 'backgrounds'), cb),
+    async addBackground(dataUrl) {
+      const ref = fs.doc(fs.collection(db, 'backgrounds'));
+      const b: Background = { id: ref.id, dataUrl, createdBy: me, createdAt: Date.now() };
+      await fs.setDoc(ref, b);
+      return ref.id;
+    },
+    async deleteBackground(id) {
+      await fs.deleteDoc(fs.doc(db, 'backgrounds', id));
+    },
+    watchPrefs: (cb) => watchCol<Prefs>(fs.collection(db, 'prefs'), cb),
+    async setMyBackground(backgroundId) {
+      if (!me) return;
+      const p: Prefs = { personId: me, backgroundId };
+      await fs.setDoc(fs.doc(db, 'prefs', me), p);
     },
 
     async ensureSeed() {
