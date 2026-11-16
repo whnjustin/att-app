@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { Poi } from '../../../contracts/types';
 import type { Leg, Stop } from '../../../lib/geo';
 import { formatDistance, formatDuration } from './format';
-import { boundsOf, defaultDay, displayLegs, lineCollection, markerModels, swapTimes } from './model';
+import {
+  boundsOf,
+  defaultDay,
+  displayLegs,
+  lineCollection,
+  markerModels,
+  reorderTimes,
+  swapTimes,
+} from './model';
 
 const poi = (id: string, lng: number, lat: number): Poi => ({
   id,
@@ -126,6 +134,47 @@ describe('swapTimes', () => {
   it('keeps the 30 minute grid and a minimum of 30 minutes', () => {
     const [a] = swapTimes({ startMin: 600, endMin: 610 }, { startMin: 660, endMin: 720 });
     expect(a).toEqual({ startMin: 660, endMin: 690 });
+  });
+});
+
+describe('reorderTimes', () => {
+  const A1 = { startMin: 600, endMin: 660 };
+  const B1 = { startMin: 720, endMin: 870 };
+  const C1 = { startMin: 900, endMin: 960 };
+  it('matches swapTimes for an adjacent move', () => {
+    const [a, b] = swapTimes(A1, B1);
+    expect(reorderTimes([A1, B1, C1], 0, 1)).toEqual([a, b, C1]);
+    expect(reorderTimes([A1, B1, C1], 1, 0)).toEqual([a, b, C1]);
+  });
+  it('moves first to last and keeps the set of start times', () => {
+    const r = reorderTimes([A1, B1, C1], 0, 2);
+    expect(r[1]).toEqual({ startMin: 600, endMin: 750 });
+    expect(r[2]).toEqual({ startMin: 720, endMin: 780 });
+    expect(r[0]).toEqual({ startMin: 900, endMin: 960 });
+  });
+  it('moves last to first', () => {
+    const r = reorderTimes([A1, B1, C1], 2, 0);
+    expect(r[2]).toEqual({ startMin: 600, endMin: 660 });
+    expect(r[0]).toEqual({ startMin: 720, endMin: 780 });
+    expect(r[1]).toEqual({ startMin: 900, endMin: 1050 });
+  });
+  it('leaves stops outside the range alone and ignores a no-op', () => {
+    const r = reorderTimes([A1, B1, C1], 1, 2);
+    expect(r[0]).toEqual(A1);
+    expect(reorderTimes([A1, B1, C1], 1, 1)).toEqual([A1, B1, C1]);
+    expect(reorderTimes([A1, B1, C1], 1, 5)).toEqual([A1, B1, C1]);
+  });
+  it('clamps to the end of the day', () => {
+    const r = reorderTimes(
+      [
+        { startMin: 1200, endMin: 1380 },
+        { startMin: 1380, endMin: 1440 },
+      ],
+      0,
+      1,
+    );
+    expect(r[0]).toEqual({ startMin: 1380, endMin: 1440 });
+    expect(r[1]).toEqual({ startMin: 1200, endMin: 1260 });
   });
 });
 

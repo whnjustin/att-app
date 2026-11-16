@@ -11,20 +11,18 @@ import {
   wazeUrl,
   type ResolvedLeg,
 } from '../../../lib/geo';
-import { stopColorVar } from '../../../lib/geo/legs';
-import { formatDay, formatRange, todayTripDay } from '../../../lib/time';
-import { Badge, Glass, Icon, IconButton, ListGroup, ListRow, SegmentedControl } from '../../../ui';
-import { formatDistance, formatDuration } from './format';
+import { formatDay, todayTripDay } from '../../../lib/time';
+import { Glass, Icon, IconButton, SegmentedControl } from '../../../ui';
 import {
   boundsOf,
   defaultDay,
   displayLegs,
   lineCollection,
   markerModels,
-  swapTimes,
   type LngLat,
   type MarkerModel,
 } from './model';
+import { StopList } from './StopList';
 import './map.css';
 
 const SOURCE = 'day-legs';
@@ -84,16 +82,6 @@ export function DayMap() {
   const residences = useMemo(() => pois.filter((p) => p.category === 'stay'), [pois]);
 
   const itemById = useMemo(() => new Map(items.map((i) => [i.id, i])), [items]);
-  const move = useCallback(
-    async (i: number, dir: -1 | 1) => {
-      const a = itemById.get(stops[i]?.itemId ?? '');
-      const b = itemById.get(stops[i + dir]?.itemId ?? '');
-      if (!a || !b) return;
-      const [na, nb] = swapTimes(a, b);
-      await Promise.all([store.updateItem(a.id, na), store.updateItem(b.id, nb)]);
-    },
-    [itemById, stops, store],
-  );
 
   const [resolved, setResolved] = useState<ResolvedLeg[]>([]);
   const display = useMemo(() => displayLegs(legs, resolved), [legs, resolved]);
@@ -294,53 +282,7 @@ export function DayMap() {
         <div className="map-empty">No stops</div>
       ) : (
         <div className="leg-list">
-          <ListGroup>
-            {stops.flatMap((st, i) => {
-              const it = itemById.get(st.itemId);
-              const d = display[i];
-              const rows = [
-                <ListRow
-                  key={`stop:${st.itemId}`}
-                  leading={<Badge n={st.number} colorVar={stopColorVar(st.number)} />}
-                  title={st.poi.name}
-                  subtitle={it ? formatRange(it.startMin, it.endMin) : undefined}
-                  action={
-                    <span className="stop-moves">
-                      <IconButton
-                        icon="chevron"
-                        iconSize={18}
-                        className="move-up"
-                        aria-label={`Move ${st.poi.name} earlier`}
-                        disabled={i === 0}
-                        onClick={() => void move(i, -1)}
-                      />
-                      <IconButton
-                        icon="chevron"
-                        iconSize={18}
-                        className="move-down"
-                        aria-label={`Move ${st.poi.name} later`}
-                        disabled={i === stops.length - 1}
-                        onClick={() => void move(i, 1)}
-                      />
-                    </span>
-                  }
-                />,
-              ];
-              if (d) {
-                rows.push(
-                  <li key={`gap:${i}`} className="stop-gap" aria-hidden={d.durationS === null}>
-                    {d.durationS !== null && d.distanceM !== null ? (
-                      <>
-                        <span>{formatDuration(d.durationS)}</span>
-                        <span>{formatDistance(d.distanceM)}</span>
-                      </>
-                    ) : null}
-                  </li>,
-                );
-              }
-              return rows;
-            })}
-          </ListGroup>
+          <StopList stops={stops} itemById={itemById} display={display} />
         </div>
       )}
     </section>

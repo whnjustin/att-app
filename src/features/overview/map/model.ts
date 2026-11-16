@@ -145,6 +145,35 @@ export function swapTimes(a: Span, b: Span): [Span, Span] {
   return [place(b.startMin, a), place(a.startMin, b)];
 }
 
+/**
+ * Move the stop at fromIndex to toIndex. The involved stops keep the same set of start times, handed out in
+ * time order to the stops in their new order; each keeps its own duration, on the 30 minute grid, with the end
+ * clamped to the end of the day. Returns the new span of every input item at its input index.
+ */
+export function reorderTimes(items: Span[], fromIndex: number, toIndex: number): Span[] {
+  const n = items.length;
+  if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= n || toIndex >= n) {
+    return items.map((s) => ({ ...s }));
+  }
+  const lo = Math.min(fromIndex, toIndex);
+  const hi = Math.max(fromIndex, toIndex);
+  const order: number[] = [];
+  for (let i = lo; i <= hi; i++) order.push(i);
+  order.splice(fromIndex - lo, 1);
+  order.splice(toIndex - lo, 0, fromIndex);
+  const starts = items
+    .slice(lo, hi + 1)
+    .map((s) => s.startMin)
+    .sort((x, y) => x - y);
+  const out = items.map((s) => ({ ...s }));
+  order.forEach((src, k) => {
+    const own = items[src];
+    const dur = Math.max(30, snap30(own.endMin - own.startMin));
+    out[src] = { startMin: starts[k], endMin: Math.min(DAY_MIN, starts[k] + dur) };
+  });
+  return out;
+}
+
 export function boundsOf(points: LngLat[]): [LngLat, LngLat] | null {
   if (!points.length) return null;
   let w = Infinity;
