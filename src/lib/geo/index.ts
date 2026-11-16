@@ -9,6 +9,13 @@ export {
   type DebouncedSearch,
 } from './photon';
 export { parseGoogleMapsUrl, type GmapsParse } from './gmapsUrl';
+export {
+  isShortLink,
+  resolveShortLink,
+  interpretResolved,
+  extractCoordsFromHtml,
+  type ShortLinkResult,
+} from './shortLink';
 export { googleMapsUrl, googleEmbedUrl, wazeUrl } from './links';
 export { fetchLeg, enqueueOsrm, osrmUrl } from './osrm';
 export { legKey, buildLegs, stopsFor, legIndexByItem, type Leg, type Stop } from './legs';
