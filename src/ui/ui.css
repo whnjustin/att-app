@@ -376,8 +376,29 @@
   align-items: center;
   padding-right: var(--s2);
 }
+.row-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--dur) var(--spring),
+    opacity var(--dur) var(--spring);
+}
+.row-expand.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.row-expand-inner {
+  min-height: 0;
+  overflow: hidden;
+}
 .row-expanded {
   padding: 0 var(--s4) var(--s3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .row-expand {
+    transition: none;
+  }
 }
 
 /* Sheet */

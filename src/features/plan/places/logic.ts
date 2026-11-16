@@ -84,3 +84,16 @@ export function findDuplicate(candidate: Candidate, pois: Poi[]): Poi | null {
     pois.find((p) => normaliseName(p.name) === n && haversineM(p, candidate) <= DUPLICATE_RADIUS_M) ?? null
   );
 }
+
+export const MIN_SEARCH_CHARS = 2;
+
+/** `Not found` shows only once a search for the current query has finished with zero hits. */
+export function shouldShowNotFound(s: {
+  query: string;
+  settledQuery: string | null;
+  hitCount: number;
+  failed: boolean;
+}): boolean {
+  const q = s.query.trim();
+  return !s.failed && q.length >= MIN_SEARCH_CHARS && s.settledQuery === q && s.hitCount === 0;
+}

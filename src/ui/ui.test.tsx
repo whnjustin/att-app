@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { SegmentedControl, Sheet, TimeField } from './index';
+import { ListGroup, ListRow, SegmentedControl, Sheet, TimeField } from './index';
 
 afterEach(cleanup);
 
@@ -90,5 +90,46 @@ describe('TimeField', () => {
     expect(select.options[1].textContent).toBe('12:30 AM');
     fireEvent.change(select, { target: { value: '600' } });
     expect(onChange).toHaveBeenCalledWith(600);
+  });
+});
+
+describe('ListRow expand', () => {
+  function Row() {
+    const [open, setOpen] = useState(false);
+    return (
+      <ListGroup>
+        <ListRow title="Row" expanded={open} onClick={() => setOpen(!open)} expandedContent={<p>Inside</p>} />
+      </ListGroup>
+    );
+  }
+  it('mounts on open and unmounts after the close transition', () => {
+    vi.useFakeTimers();
+    render(<Row />);
+    const btn = screen.getByRole('button', { name: 'Row' });
+    expect(screen.queryByText('Inside')).toBeNull();
+    fireEvent.click(btn);
+    expect(btn.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByText('Inside')).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
+    fireEvent.click(btn);
+    expect(btn.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByText('Inside')).toBeTruthy();
+    fireEvent.transitionEnd(document.querySelector('.row-expand') as HTMLElement);
+    expect(screen.queryByText('Inside')).toBeNull();
+    vi.useRealTimers();
+  });
+  it('unmounts by fallback timer when no transition fires', () => {
+    vi.useFakeTimers();
+    render(<Row />);
+    const btn = screen.getByRole('button', { name: 'Row' });
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(screen.queryByText('Inside')).toBeNull();
+    vi.useRealTimers();
   });
 });

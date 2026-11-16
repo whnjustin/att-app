@@ -1,4 +1,4 @@
-import { Children, useId, type ReactNode } from 'react';
+import { Children, useEffect, useId, useState, type ReactNode, type TransitionEvent } from 'react';
 import { Icon } from './Icon';
 
 export interface ListGroupProps {
@@ -44,6 +44,48 @@ export interface ListRowProps {
   expandedContent?: ReactNode;
 }
 
+const CLOSE_FALLBACK_MS = 450;
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** Keeps content mounted while a height and opacity transition runs, then unmounts it. */
+function useExpand(expanded: boolean) {
+  const [mounted, setMounted] = useState(expanded);
+  const [open, setOpen] = useState(expanded);
+
+  useEffect(() => {
+    if (expanded) {
+      setMounted(true);
+      if (prefersReducedMotion()) {
+        setOpen(true);
+        return;
+      }
+      let b = 0;
+      const a = requestAnimationFrame(() => {
+        b = requestAnimationFrame(() => setOpen(true));
+      });
+      return () => {
+        cancelAnimationFrame(a);
+        cancelAnimationFrame(b);
+      };
+    }
+    setOpen(false);
+    if (prefersReducedMotion()) {
+      setMounted(false);
+      return;
+    }
+    const t = setTimeout(() => setMounted(false), CLOSE_FALLBACK_MS);
+    return () => clearTimeout(t);
+  }, [expanded]);
+
+  const onTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && !expanded) setMounted(false);
+  };
+  return { mounted, open, onTransitionEnd };
+}
+
 export function ListRow({
   leading,
   title,
@@ -56,6 +98,7 @@ export function ListRow({
   expandedContent,
 }: ListRowProps) {
   const interactive = !!onClick;
+  const expand = useExpand(!!expanded && !!expandedContent);
   const body = (
     <>
       {leading ? <span className="row-leading">{leading}</span> : null}
@@ -86,7 +129,13 @@ export function ListRow({
       ) : (
         main
       )}
-      {expanded && expandedContent ? <div className="row-expanded">{expandedContent}</div> : null}
+      {expand.mounted && expandedContent ? (
+        <div className={`row-expand${expand.open ? ' open' : ''}`} onTransitionEnd={expand.onTransitionEnd}>
+          <div className="row-expand-inner">
+            <div className="row-expanded">{expandedContent}</div>
+          </div>
+        </div>
+      ) : null}
     </li>
   );
 }

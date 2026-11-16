@@ -133,3 +133,9 @@
   font-size: 14px;
   padding-inline: var(--s1);
 }
+.place-notfound {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+}
