@@ -13,7 +13,9 @@
     "test": "vitest run",
     "check-copy": "node scripts/check-copy.mjs",
     "check-private": "node scripts/check-private.mjs",
-    "smoke": "playwright test"
+    "smoke": "playwright test",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-att-rules \"node --test rules-tests/*.test.mjs\"",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "firebase": "^11.10.0",
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@playwright/test": "^1.65.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
@@ -33,6 +36,7 @@
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.5.8",
+    "firebase-tools": "^15.36.0",
     "globals": "^17.14.0",
     "jsdom": "^31.0.1",
     "prettier": "^3.10.1",

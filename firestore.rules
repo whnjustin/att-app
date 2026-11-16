@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function isMember() {
+      return signedIn() && exists(/databases/$(db)/documents/members/$(request.auth.uid));
+    }
+
+    function validItem(d) {
+      return d.date in ['2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22']
+        && d.kind in ['meal', 'poi']
+        && d.startMin is int && d.endMin is int
+        && d.startMin % 30 == 0 && d.endMin % 30 == 0
+        && d.startMin >= 0
+        && d.startMin + 30 <= d.endMin
+        && d.endMin <= 1440;
+    }
+
+    function validPoi(d) {
+      return d.lat is number && d.lng is number
+        && d.name is string && d.name.size() > 0
+        && d.category in ['restaurant', 'cafe', 'bar', 'other', 'stay'];
+    }
+
+    match /passcodes/{code} { allow read, write: if false; }
+
+    match /members/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.code is string
+        && exists(/databases/$(db)/documents/passcodes/$(request.resource.data.code));
+      allow update: if isMember() && request.auth.uid == uid
+        && request.resource.data.code == resource.data.code
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['personId']);
+      allow delete: if false;
+    }
+
+    match /items/{id} {
+      allow read, delete: if isMember();
+      allow create, update: if isMember() && validItem(request.resource.data);
+    }
+
+    match /pois/{id} {
+      allow read, delete: if isMember();
+      allow create, update: if isMember() && validPoi(request.resource.data);
+    }
+
+    match /{col}/{id} {
+      allow read, write: if isMember() && col in ['people', 'days', 'routes', 'presence', 'meta'];
+    }
+  }
+}
