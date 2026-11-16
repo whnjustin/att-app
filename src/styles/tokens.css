@@ -1,0 +1,118 @@
+/* Design tokens (docs/PLAN.md B8). */
+:root {
+  color-scheme: light dark;
+  /* surfaces */
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --surface-2: #f2f2f7;
+  --separator: rgba(60, 60, 67, 0.18);
+  /* text */
+  --label: #000000;
+  --label-2: rgba(60, 60, 67, 0.6);
+  --label-3: rgba(60, 60, 67, 0.3);
+  --tint: #007aff;
+  --destructive: #ff3b30;
+  --on-tint: #ffffff;
+  --scrim: rgba(0, 0, 0, 0.25);
+  /* glass */
+  --glass-fill: rgba(255, 255, 255, 0.55);
+  --glass-fill-strong: rgba(255, 255, 255, 0.78);
+  --glass-blur: 24px;
+  --glass-saturate: 180%;
+  --glass-edge: rgba(255, 255, 255, 0.65);
+  --glass-rim: rgba(0, 0, 0, 0.06);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  /* people */
+  --person-ayyad: #007aff;
+  --person-bqck: #ff9500;
+  --person-xavier: #34c759;
+  --person-nicolino: #ff3b30;
+  --person-justinn: #30b0c7;
+  --person-justinw: #5856d6;
+  /* route legs, used in order, wrap after 8 */
+  --leg-1: #007aff;
+  --leg-2: #ff2d55;
+  --leg-3: #34c759;
+  --leg-4: #ff9500;
+  --leg-5: #af52de;
+  --leg-6: #00c7be;
+  --leg-7: #ffcc00;
+  --leg-8: #a2845e;
+  /* category */
+  --cat-restaurant: #ff9500;
+  --cat-cafe: #a2845e;
+  --cat-bar: #af52de;
+  --cat-other: #8e8e93;
+  --cat-stay: #007aff;
+  /* type */
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --t-large: 700 34px/41px var(--font-display);
+  --t-title2: 700 22px/28px var(--font-display);
+  --t-title3: 600 20px/25px var(--font-display);
+  --t-headline: 600 17px/22px var(--font);
+  --t-body: 400 17px/22px var(--font);
+  --t-callout: 400 16px/21px var(--font);
+  --t-subhead: 400 15px/20px var(--font);
+  --t-footnote: 400 13px/18px var(--font);
+  --t-caption: 500 12px/16px var(--font);
+  /* shape */
+  --r-sheet: 28px;
+  --r-card: 20px;
+  --r-control: 14px;
+  --r-capsule: 999px;
+  /* spacing, 4 pt grid */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --gutter: 16px;
+  --hit: 44px;
+  --content-max: 720px;
+  /* motion */
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 180ms;
+  --dur: 320ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --separator: rgba(84, 84, 88, 0.6);
+    --label: #ffffff;
+    --label-2: rgba(235, 235, 245, 0.6);
+    --label-3: rgba(235, 235, 245, 0.3);
+    --tint: #0a84ff;
+    --destructive: #ff453a;
+    --scrim: rgba(0, 0, 0, 0.45);
+    --glass-fill: rgba(40, 40, 44, 0.55);
+    --glass-fill-strong: rgba(40, 40, 44, 0.8);
+    --glass-edge: rgba(255, 255, 255, 0.18);
+    --glass-rim: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --person-ayyad: #0a84ff;
+    --person-bqck: #ff9f0a;
+    --person-xavier: #30d158;
+    --person-nicolino: #ff453a;
+    --person-justinn: #40c8e0;
+    --person-justinw: #5e5ce6;
+    --leg-1: #0a84ff;
+    --leg-2: #ff375f;
+    --leg-3: #30d158;
+    --leg-4: #ff9f0a;
+    --leg-5: #bf5af2;
+    --leg-6: #63e6e2;
+    --leg-7: #ffd60a;
+    --leg-8: #ac8e68;
+    --cat-restaurant: #ff9f0a;
+    --cat-cafe: #ac8e68;
+    --cat-bar: #bf5af2;
+    --cat-other: #98989d;
+    --cat-stay: #0a84ff;
+  }
+}
