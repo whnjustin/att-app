@@ -42,7 +42,9 @@
   justify-content: center;
   width: var(--hit);
   height: var(--hit);
-  margin: calc(var(--s2) * -1) calc(var(--s2) * -1) calc(var(--s2) * -1) 0;
+  padding: 0;
+  border: 0;
+  background: none;
   border-radius: var(--r-capsule);
   color: var(--tint);
   cursor: pointer;

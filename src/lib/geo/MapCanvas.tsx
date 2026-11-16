@@ -73,7 +73,12 @@ export function MapCanvas({
     };
     mq?.addEventListener('change', swap);
 
+    // Keep the canvas in step with its container (aspect-ratio cards, sheets opening).
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => map.resize()) : null;
+    ro?.observe(el);
+
     return () => {
+      ro?.disconnect();
       mq?.removeEventListener('change', swap);
       map.remove();
     };

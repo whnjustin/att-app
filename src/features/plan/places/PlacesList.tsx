@@ -225,26 +225,17 @@ export function PlacesList() {
                           {n}
                         </span>
                       ) : null}
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        className="place-plus"
-                        aria-label={`Add ${p.name} to day plan`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPlanFor(p);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setPlanFor(p);
-                          }
-                        }}
-                      >
-                        <Icon name="plus" size={22} />
-                      </span>
                     </span>
+                  }
+                  action={
+                    <button
+                      type="button"
+                      className="place-plus"
+                      aria-label={`Add ${p.name} to day plan`}
+                      onClick={() => setPlanFor(p)}
+                    >
+                      <Icon name="plus" size={22} />
+                    </button>
                   }
                   expandedContent={<PlaceDetails poi={p} />}
                 />
