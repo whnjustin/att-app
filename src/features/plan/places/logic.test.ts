@@ -1,6 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import type { ItineraryItem, Poi } from '../../../contracts/types';
-import { displayAddress, findDuplicate, groupPlaces, haversineM, normaliseName, usageCounts } from './logic';
+import {
+  displayAddress,
+  findDuplicate,
+  groupPlaces,
+  haversineM,
+  normaliseName,
+  shouldShowNotFound,
+  usageCounts,
+} from './logic';
+
+describe('shouldShowNotFound', () => {
+  const base = { query: 'zz', settledQuery: 'zz', hitCount: 0, failed: false };
+  it('shows after a finished empty search of 2 or more characters', () => {
+    expect(shouldShowNotFound(base)).toBe(true);
+  });
+  it('hides while in flight, for short or empty queries, with hits, or on failure', () => {
+    expect(shouldShowNotFound({ ...base, settledQuery: null })).toBe(false);
+    expect(shouldShowNotFound({ ...base, settledQuery: 'z' })).toBe(false);
+    expect(shouldShowNotFound({ ...base, query: 'z', settledQuery: 'z' })).toBe(false);
+    expect(shouldShowNotFound({ ...base, query: '', settledQuery: '' })).toBe(false);
+    expect(shouldShowNotFound({ ...base, hitCount: 1 })).toBe(false);
+    expect(shouldShowNotFound({ ...base, failed: true })).toBe(false);
+  });
+});
 
 function poi(over: Partial<Poi>): Poi {
   return {

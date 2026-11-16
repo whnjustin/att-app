@@ -13,7 +13,7 @@ import {
   Sheet,
   TextField,
 } from '../../../ui';
-import { findDuplicate } from './logic';
+import { findDuplicate, shouldShowNotFound } from './logic';
 import './places.css';
 
 export interface AddPlaceSheetProps {
@@ -64,6 +64,8 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<PlaceHit[]>([]);
   const [searchFailed, setSearchFailed] = useState(false);
+  const [settledQuery, setSettledQuery] = useState<string | null>(null);
+  const [focusLink, setFocusLink] = useState(false);
   const [link, setLink] = useState('');
   const [draft, setDraft] = useState<Draft | null>(null);
   const [note, setNote] = useState('');
@@ -77,6 +79,7 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
   const onQuery = (q: string) => {
     setQuery(q);
     setSearchFailed(false);
+    setSettledQuery(null);
     if (!q.trim()) {
       searcher.cancel();
       setHits([]);
@@ -84,7 +87,10 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
     }
     searcher.search(q).then(
       (res) => {
-        if (res) setHits(res);
+        if (res) {
+          setHits(res);
+          setSettledQuery(q.trim());
+        }
       },
       () => setSearchFailed(true),
     );
@@ -168,12 +174,31 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
     }
   };
 
-  const toggle = (m: Mode) => setMode(mode === m ? 'search' : m);
+  const toggle = (m: Mode) => {
+    setFocusLink(false);
+    setMode(mode === m ? 'search' : m);
+  };
+  const notFound = shouldShowNotFound({ query, settledQuery, hitCount: hits.length, failed: searchFailed });
+  const pasteLink = () => {
+    setMode('link');
+    setFocusLink(true);
+    document.getElementById('place-link')?.focus();
+  };
 
   return (
     <div className="place-form">
       <SearchField value={query} onChange={onQuery} ariaLabel="Search places" placeholder="Search places" />
       {searchFailed ? <p className="place-status">Search unavailable</p> : null}
+      {notFound ? (
+        <div className="place-notfound">
+          <p className="place-status" role="status">
+            Not found
+          </p>
+          <Button variant="tinted" onClick={pasteLink}>
+            Paste a Google Maps link
+          </Button>
+        </div>
+      ) : null}
       {mode === 'search' && hits.length > 0 ? (
         <ListGroup>
           {hits.map((h, i) => (
@@ -196,7 +221,15 @@ function AddPlaceBody({ onSaved }: { onSaved: (poiId: string) => void }) {
           onClick={() => toggle('link')}
           expandedContent={
             <div className="place-form">
-              <TextField label="Link" value={link} onChange={onLink} inputMode="url" autoComplete="off" />
+              <TextField
+                id="place-link"
+                autoFocus={focusLink}
+                label="Link"
+                value={link}
+                onChange={onLink}
+                inputMode="url"
+                autoComplete="off"
+              />
               {linkError ? (
                 <p className="place-status" role="alert">
                   {linkError}
