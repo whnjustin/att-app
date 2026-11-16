@@ -1,0 +1,140 @@
+.gate {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--gutter);
+  background: var(--bg);
+}
+
+.gate-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s6);
+  background: var(--surface);
+  border-radius: var(--r-card);
+}
+
+.gate-card-wide {
+  max-width: 440px;
+}
+
+.gate-title {
+  font: var(--t-title2);
+  text-align: center;
+  color: var(--label);
+  margin-bottom: var(--s2);
+}
+
+.gate-input {
+  min-height: var(--hit);
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--label);
+  font: var(--t-body);
+  text-align: center;
+  outline: none;
+}
+
+.gate-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--tint);
+}
+
+.gate-input[aria-invalid='true'] {
+  box-shadow: 0 0 0 2px var(--destructive);
+}
+
+.gate-error {
+  min-height: 18px;
+  font: var(--t-footnote);
+  color: var(--destructive);
+  text-align: center;
+}
+
+.gate-button {
+  min-height: var(--hit);
+  border: 0;
+  border-radius: var(--r-capsule);
+  background: var(--tint);
+  color: var(--on-tint);
+  font: var(--t-headline);
+}
+
+.gate-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.gate-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s3);
+}
+
+.gate-person {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--hit);
+  padding: var(--s2) 0;
+  border: 0;
+  background: none;
+  border-radius: var(--r-control);
+  color: var(--label);
+}
+
+.gate-person:focus-visible {
+  outline: 2px solid var(--tint);
+}
+
+.gate-avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #fff;
+  font: var(--t-headline);
+}
+
+.gate-name {
+  font: var(--t-footnote);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gate-shake {
+  animation: gate-shake 360ms var(--spring);
+}
+
+@keyframes gate-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-8px);
+  }
+  40% {
+    transform: translateX(8px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-shake {
+    animation: none;
+  }
+}
