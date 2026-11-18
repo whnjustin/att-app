@@ -75,7 +75,7 @@ export function StopList({ stops, itemById, display, onSelect }: Props) {
   const gesture = useRef<Gesture | null>(null);
   const rows = useRef(new Map<string, HTMLLIElement>());
   const focusId = useRef<string | null>(null);
-  const suppress = useRef(false);
+  const suppress = useRef(0);
   const onMoveRef = useRef<(e: PointerEvent) => void>(() => undefined);
   const onUpRef = useRef<(e: PointerEvent) => void>(() => undefined);
   const onCancelRef = useRef<(e: PointerEvent) => void>(() => undefined);
@@ -211,8 +211,8 @@ export function StopList({ stops, itemById, display, onSelect }: Props) {
       window.removeEventListener('contextmenu', blockMenu);
       gesture.current = null;
       if (!g.active) return;
-      suppress.current = true;
-      window.setTimeout(() => (suppress.current = false), 0);
+      // iOS can deliver the click well after pointerup, so guard by time, not by one tick.
+      suppress.current = Date.now() + 600;
       if (save && g.to !== g.from) {
         const expect = write(g.stops, g.items, g.from, g.to);
         if (expect) {
@@ -394,7 +394,7 @@ export function StopList({ stops, itemById, display, onSelect }: Props) {
                 onKeyDown={(e) => onKey(e, i)}
                 onBlur={() => setGrabbed((g) => (g === st.itemId ? null : g))}
                 onClick={(e) => {
-                  if (suppress.current) {
+                  if (Date.now() < suppress.current) {
                     e.preventDefault();
                     return;
                   }

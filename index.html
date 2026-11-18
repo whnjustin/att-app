@@ -10,9 +10,92 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="icon" type="image/svg+xml" href="/att-app/icon.svg" />
     <title>ATT in KL</title>
+    <style>
+      /* Loading skeleton, shown before the script runs and while data loads (AppSkeleton). */
+      html {
+        background: #f2f2f7;
+      }
+      .skel {
+        --skel-a: #e3e3e8;
+        --skel-b: #ececf0;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 12px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .skel-top {
+        display: flex;
+        justify-content: flex-end;
+      }
+      .skel-b {
+        display: block;
+        border-radius: 14px;
+        background: linear-gradient(90deg, var(--skel-a) 25%, var(--skel-b) 50%, var(--skel-a) 75%);
+        background-size: 200% 100%;
+        animation: skel-shine 1.4s ease-in-out infinite;
+      }
+      .skel-circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+      }
+      .skel-title {
+        width: 62%;
+        height: 40px;
+        border-radius: 10px;
+      }
+      .skel-seg {
+        height: 36px;
+        border-radius: 10px;
+      }
+      .skel-card {
+        height: 320px;
+        border-radius: 20px;
+      }
+      .skel-row {
+        height: 56px;
+      }
+      .skel-row.short {
+        width: 70%;
+      }
+      @keyframes skel-shine {
+        from {
+          background-position: 100% 0;
+        }
+        to {
+          background-position: -100% 0;
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        html {
+          background: #000;
+        }
+        .skel {
+          --skel-a: #1c1c1e;
+          --skel-b: #2c2c2e;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .skel-b {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="skel" aria-busy="true" aria-label="Loading">
+        <div class="skel-top"><span class="skel-b skel-circle"></span></div>
+        <span class="skel-b skel-title"></span>
+        <span class="skel-b skel-seg"></span>
+        <span class="skel-b skel-card"></span>
+        <span class="skel-b skel-row"></span>
+        <span class="skel-b skel-row"></span>
+        <span class="skel-b skel-row short"></span>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

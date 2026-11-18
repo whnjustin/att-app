@@ -243,3 +243,41 @@
   font: var(--t-subhead);
   color: var(--label-2);
 }
+
+/* Remove target in the hour gutter while an item is held. Swipe left onto it and release to remove. */
+.tl-remove {
+  position: absolute;
+  left: 8px;
+  width: 40px;
+  height: 40px;
+  margin-top: 2px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--destructive);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.18);
+  z-index: 6;
+  pointer-events: none;
+  animation: tl-remove-in var(--dur-fast) var(--spring) both;
+  transition:
+    transform var(--dur-fast) var(--spring),
+    top var(--dur-fast) var(--spring);
+}
+.tl-remove.active {
+  transform: scale(1.2);
+}
+.tl-block.removing .tl-inner {
+  opacity: 0.45;
+}
+@keyframes tl-remove-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tl-remove {
+    animation: none;
+  }
+}

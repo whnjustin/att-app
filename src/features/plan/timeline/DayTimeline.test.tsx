@@ -47,6 +47,6 @@ describe('DayTimeline', () => {
     await setup();
     fireEvent.keyDown(screen.getByRole('button', { name: 'Dinner, 8 PM to 9 PM' }), { key: 'Enter' });
     expect(screen.getByRole('dialog')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Remove from day' })).toBeTruthy();
   });
 });
