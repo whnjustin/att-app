@@ -116,7 +116,7 @@ export function ItemSheet({
               onClose();
             }}
           >
-            Delete
+            Remove from day
           </Button>
         ) : null
       }

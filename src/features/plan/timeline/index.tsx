@@ -5,7 +5,7 @@ import { useItems, usePois, useStore } from '../../../contracts/store';
 import { navigate } from '../../../lib/router';
 import { formatDay, formatMin, formatRange, todayTripDay } from '../../../lib/time';
 import { legIndexByItem } from '../../../lib/geo';
-import { Badge, IconButton, SegmentedControl } from '../../../ui';
+import { Badge, Icon, IconButton, SegmentedControl } from '../../../ui';
 import { AddPlaceSheet, openPlace } from '../places';
 import {
   PX_PER_HOUR,
@@ -30,6 +30,8 @@ const GRID_H = PX_PER_HOUR * 24 + TOP_PAD * 2;
 const FIRST_HOUR = DAY_START / 60;
 const EDGE = 48;
 const LONG_PRESS_MS = 250;
+/** A click this soon after a hold ends belongs to the hold (iOS sends it late), not a tap. */
+const CLICK_GUARD_MS = 600;
 const KEY_DEBOUNCE_MS = 400;
 const DEFAULT_DAY: DateKey = '2026-11-19';
 const HOURS = Array.from({ length: 24 }, (_, h) => h + FIRST_HOUR);
@@ -39,6 +41,10 @@ type Mode = 'move' | 'start' | 'end';
 interface Hold extends Span {
   id: string;
   phase: 'drag' | 'hold' | 'commit';
+  /** Moving the whole item: the remove target shows in the hour gutter. */
+  removable?: boolean;
+  /** Finger is over the remove target. */
+  removing?: boolean;
 }
 
 interface Gesture {
@@ -50,6 +56,9 @@ interface Gesture {
   startX: number;
   startScroll: number;
   lastY: number;
+  lastX: number;
+  laneLeft: number;
+  removing: boolean;
   orig: Span;
   cur: Span;
   active: boolean;
@@ -88,7 +97,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
   const gridRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const keyTimer = useRef<number | null>(null);
-  const suppressClick = useRef(false);
+  const suppressClick = useRef(0);
   const holdRef = useRef<Hold | null>(null);
   holdRef.current = hold;
   const itemsRef = useRef(items);
@@ -162,13 +171,20 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
     const sc = scrollRef.current;
     const dy = g.lastY - g.startY + (sc ? sc.scrollTop - g.startScroll : 0);
     const dMin = dy / PX_PER_MIN;
+    if (g.mode === 'move') {
+      g.removing = g.lastX < g.laneLeft;
+      if (g.removing) {
+        setHold({ id: g.id, ...g.cur, phase: 'drag', removable: true, removing: true });
+        return;
+      }
+    }
     g.cur =
       g.mode === 'move'
         ? moveSpan(g.orig, dMin)
         : g.mode === 'end'
           ? resizeEnd(g.orig, dMin)
           : resizeStart(g.orig, dMin);
-    setHold({ id: g.id, ...g.cur, phase: 'drag' });
+    setHold({ id: g.id, ...g.cur, phase: 'drag', removable: g.mode === 'move' });
   }, []);
 
   const stopLoop = (g: Gesture) => {
@@ -217,13 +233,17 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
       window.removeEventListener('touchmove', blockTouch);
       gesture.current = null;
       if (g.active) {
-        suppressClick.current = true;
-        window.setTimeout(() => (suppressClick.current = false), 0);
-        if (save) commit(g.id, g.cur);
+        suppressClick.current = Date.now() + CLICK_GUARD_MS;
+        if (save && g.removing) {
+          setHold(null);
+          setSelected(null);
+          navigator.vibrate?.(12);
+          void store.deleteItem(g.id);
+        } else if (save) commit(g.id, g.cur);
         else setHold(null);
       }
     },
-    [commit],
+    [commit, store],
   );
 
   const onMove = useCallback(
@@ -231,6 +251,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
       const g = gesture.current;
       if (!g || e.pointerId !== g.pointerId) return;
       g.lastY = e.clientY;
+      g.lastX = e.clientX;
       if (!g.active) {
         const dist = Math.hypot(e.clientX - g.startX, e.clientY - g.startY);
         if (g.touch) {
@@ -280,6 +301,10 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
       startY: e.clientY,
       startScroll: scrollRef.current?.scrollTop ?? 0,
       lastY: e.clientY,
+      lastX: e.clientX,
+      laneLeft:
+        (e.currentTarget as HTMLElement).closest('.tl-lane')?.getBoundingClientRect().left ?? -Infinity,
+      removing: false,
       orig,
       cur: orig,
       active: false,
@@ -327,7 +352,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
     [],
   );
   const onItemTap = (item: ItineraryItem) => {
-    if (suppressClick.current) return;
+    if (Date.now() < suppressClick.current) return;
     setSelected(item.id);
     const pending = tapTimer.current;
     if (pending) window.clearTimeout(pending.t);
@@ -369,7 +394,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
   // ---- taps and add ----
 
   const onGridClick = (e: MouseEvent) => {
-    if (suppressClick.current) return;
+    if (Date.now() < suppressClick.current) return;
     if ((e.target as HTMLElement).closest('.tl-block')) return;
     const grid = gridRef.current;
     if (!grid) return;
@@ -409,6 +434,15 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
             </div>
           ))}
           <div className="tl-end" style={{ top: TOP_PAD + 24 * PX_PER_HOUR }} />
+          {hold && hold.phase === 'drag' && hold.removable ? (
+            <div
+              className={`tl-remove${hold.removing ? ' active' : ''}`}
+              style={{ top: TOP_PAD + minToPx(hold.startMin) }}
+              aria-hidden="true"
+            >
+              <Icon name="trash" size={18} />
+            </div>
+          ) : null}
           <div className="tl-lane">
             {shown.map((item) => {
               const poi = item.poiId ? poiById.get(item.poiId) : undefined;
@@ -424,6 +458,7 @@ export function DayTimeline({ date }: { date: DateKey | null }) {
                 unlinked ? 'unlinked' : 'linked',
                 selected === item.id ? 'selected' : '',
                 dragging ? 'dragging' : '',
+                dragging && hold?.removing ? 'removing' : '',
                 compact ? 'compact' : '',
               ]
                 .filter(Boolean)

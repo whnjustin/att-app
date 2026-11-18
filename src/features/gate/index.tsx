@@ -1,3 +1,4 @@
+import { AppSkeleton } from '../shell/Skeleton';
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useStore, type Store } from '../../contracts/store';
 import { PEOPLE } from '../../contracts/seed';
@@ -132,7 +133,7 @@ function FirestoreGate({ store, children }: { store: Store; children: ReactNode 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store]);
 
-  if (phase === 'loading' || phase === 'seeding') return <main className="gate" aria-busy="true" />;
+  if (phase === 'loading' || phase === 'seeding') return <AppSkeleton />;
   if (phase === 'code') return <Passcode store={store} onDone={enter} />;
   if (me === null) return <Picker store={store} />;
   return <>{children}</>;

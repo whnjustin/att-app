@@ -6,6 +6,7 @@ import { firebaseConfig } from './config/firebase.config';
 import { useRoute, type Route } from './lib/router';
 import { Gate } from './features/gate';
 import { Shell } from './features/shell';
+import { AppSkeleton, DataReady } from './features/shell/Skeleton';
 import { ArrivalsCalendar } from './features/overview/arrivals';
 import { DayMap } from './features/overview/map';
 import { DayTimeline } from './features/plan/timeline';
@@ -71,14 +72,16 @@ export default function App() {
     };
   }, []);
 
-  if (!store) return null;
+  if (!store) return <AppSkeleton />;
 
   return (
     <StoreProvider store={store}>
       <Gate>
-        <Shell route={route}>
-          <Page route={route} />
-        </Shell>
+        <DataReady>
+          <Shell route={route}>
+            <Page route={route} />
+          </Shell>
+        </DataReady>
       </Gate>
     </StoreProvider>
   );
